@@ -1,0 +1,19 @@
+# Syntax Coloring Map
+
+# Datatypes (KEYWORD1)
+UAVNode         KEYWORD1
+UAVSerialPort   KEYWORD1
+UAVTransport    KEYWORD1
+
+UAVInStream     KEYWORD1
+UAVOutStream    KEYWORD1
+
+
+# Methods and Functions (KEYWORD2)
+publish         KEYWORD2
+subscribe       KEYWORD2
+request         KEYWORD2
+
+# Instances (KEYWORD2)
+
+# Constants (LITERAL1)

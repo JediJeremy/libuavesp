@@ -1,7 +1,7 @@
 #ifndef NUMBERMAP_H_INCLUDED
 #define NUMBERMAP_H_INCLUDED
 
-#include "common.h"
+#include "uv_common.h"
 
 typedef void (*NumberMapCall)(void* param);
 typedef struct {

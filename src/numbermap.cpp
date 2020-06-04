@@ -1,4 +1,3 @@
-#include "common.h"
 #include "numbermap.h"
 
 NumberMap::NumberMap(int length) {

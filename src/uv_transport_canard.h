@@ -1,7 +1,7 @@
 #ifndef UV_TRANSPORT_CANARD_H_INCLUDED
 #define UV_TRANSPORT_CANARD_H_INCLUDED
 
-#include "common.h"
+#include "uv_common.h"
 #include <canard.h>
 
 // global canard context

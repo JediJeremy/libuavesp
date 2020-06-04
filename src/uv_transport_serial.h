@@ -1,7 +1,7 @@
 #ifndef UV_TRANSPORT_SERIAL_H_INCLUDED
 #define UV_TRANSPORT_SERIAL_H_INCLUDED
 
-#include "common.h"
+#include "uv_common.h"
 #include "uv_node.h"
 #include "numbermap.h"
 
