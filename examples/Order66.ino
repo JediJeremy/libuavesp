@@ -1,18 +1,7 @@
 #include <Arduino.h>
 #include <ESP8266WiFi.h>
-
 #include <math.h>
-
-#include "numbermap.h"
-#include "uv_node.h"
-#include "uv_transport.h"
-#include "uv_transport_serial.h"
-#include "uv_transport_tcp.h"
-#include "uv_primitive.h"
-#include "uv_app_heartbeat.h"
-#include "uv_app_nodeinfo.h"
-#include "uv_app_portinfo.h"
-#include "uv_app_register.h"
+#include <libuavesp.h>
 
 // ADC Boot Configuration
 // ADC_MODE(ADC_VCC); // configure the ESP8266 to internal voltage mode, otherwise defaults to external sense
