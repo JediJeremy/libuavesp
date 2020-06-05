@@ -67,19 +67,18 @@ class PortGetInfoReply {
         // stream parser & serializer
         friend UAVInStream& operator>>(UAVInStream& s, PortGetInfoReply& v) { 
             uint8_t is_flags;
+            // decode the flags
             s >> is_flags; 
             v.is_input = (is_flags & 0x80)!=0;
             v.is_output = (is_flags & 0x40)!=0;
-            s >> v.data_type_full_name; 
-            s >> v.data_type_version; 
-            return s; 
+            // decode the rest
+            return s >> v.data_type_full_name >> v.data_type_version; 
         }
-        friend UAVOutStream& operator<<(UAVOutStream& s, const PortGetInfoReply& v) { 
+        friend UAVOutStream& operator<<(UAVOutStream& s, const PortGetInfoReply& v) {
+            // encode the flags into a byte 
             uint8_t is_flags = (v.is_input?0x80:0) | (v.is_output?0x40:0);
-            s << is_flags; 
-            s << v.data_type_full_name; 
-            s << v.data_type_version; 
-            return s; 
+            // encode everything
+            return s << is_flags << v.data_type_full_name << v.data_type_version; 
         }
 };
 

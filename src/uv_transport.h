@@ -42,25 +42,26 @@ using SerialTransferID = uint64_t;
 /// Per Specification, a transfer is represented on the wire as a non-empty set of transport frames
 /// The library is responsible for serializing transfers into transport frames when transmitting, and reassembling
 /// transfers from an incoming stream of frames during reception.
-typedef struct {
-    // transfer header
-    CanardMicrosecond   timestamp_usec;
-    CanardPriority      priority;
-    CanardTransferKind  transfer_kind;
-    CanardPortID        port_id;
-    uint64_t            datatype;
-    SerialNodeID        local_node_id;
-    SerialNodeID        remote_node_id;
-    SerialTransferID    transfer_id;
-    size_t              payload_size;
-    uint8_t*            payload;
-    // encoded frame properties
-    int                 frame_usage;
-    int                 frame_size;
-    uint8_t*            frame_data;
-    // all transfers complete callback
-    std::function<void ()> on_complete;
-} SerialTransfer;
+class SerialTransfer {
+    public:
+        // transfer header
+        CanardMicrosecond   timestamp_usec;
+        CanardPriority      priority;
+        CanardTransferKind  transfer_kind;
+        CanardPortID        port_id;
+        uint64_t            datatype;
+        SerialNodeID        local_node_id;
+        SerialNodeID        remote_node_id;
+        SerialTransferID    transfer_id;
+        size_t              payload_size;
+        uint8_t*            payload;
+        // encoded frame properties
+        int                 frame_usage;
+        int                 frame_size;
+        uint8_t*            frame_data;
+        // all transfers complete callback
+        std::function<void()> on_complete;
+};
 
 // abstract interface for serial transports
 class UAVSerialTransport : public UAVTransport {

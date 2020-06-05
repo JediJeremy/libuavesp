@@ -3,6 +3,7 @@
 
 #include "uv_common.h"
 #include "uv_node.h"
+#include "uv_primitive.h"
 
 
 #endif

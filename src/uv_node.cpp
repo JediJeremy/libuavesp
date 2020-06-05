@@ -2,6 +2,10 @@
 #include "uv_transport_serial.h"
 #include "crc32c.h"
 
+// memory allocator for canard
+void* canard_allocate(CanardInstance* ins, size_t amount) { return malloc(amount); }
+void canard_free(CanardInstance* ins, void* pointer) { free(pointer); }
+
 // generic PortInfo object, used as common base class by lists
 UAVPortInfo::UAVPortInfo(uint16_t port, PGM_P name) {
     port_id = port;
@@ -33,7 +37,6 @@ UAVNodePortInfo* UAVPortList::port_claim(uint16_t port_id, PGM_P dtf_name) {
     return info;
 }
 
-
 // set everything up in one go
 void UAVPortList::define_publish(uint16_t port_id, PGM_P dtf_name) {
     UAVNodePortInfo* port_info = port_claim(port_id, dtf_name);
@@ -64,12 +67,9 @@ void UAVPortList::debug_ports() {
 
 
 //
-
-
 UAVNode::UAVNode() {
     // simplest anonymous node
     serial_node_id = 0xFFFF;
-    
 }
 
 UAVNode::~UAVNode() {
@@ -78,7 +78,6 @@ UAVNode::~UAVNode() {
         serial->stop();
     }
 }
-
 
 /*
  * DataType Hash functions, aka Compact data type identifier
@@ -90,7 +89,6 @@ UAVNode::~UAVNode() {
  * the second takes 'pre-parsed' name fragments and avoids the parsing step.
  * 
  */
-
 uint64_t UAVNode::datatypehash(const char *name) {
     // break up the full name into the root, subroot, and datatype name parts
     const char *part[4]; int size[4];
@@ -194,15 +192,6 @@ uint64_t UAVNode::datatypehash(const char *root_ns, const char *subroot_ns, cons
     return ((uint64_t)root_hash<<32) | ((uint64_t)(subroot_hash<<20) | (dtname_hash<<8) | version);
 }
 
-
-
-void* canard_allocate(CanardInstance* ins, size_t amount) {
-    return malloc(amount);
-}
-
-void canard_free(CanardInstance* ins, void* pointer) {
-    free(pointer);
-}
 
 void UAVNode::serial_add(SerialTransport *serial) {
     _serial_transports.push_back(serial);
