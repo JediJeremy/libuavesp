@@ -10,7 +10,6 @@ char wifi_ssid[] = "ssid";    //  your network SSID (name)
 char wifi_pass[] = "pass";   // your network password
 
 
-
 // 64-bit microsecond timer lambda function, used for hardware-level events
 // deals with the 70-minute wraparound, has an offset for aligning with external clocks
 unsigned long last_micros = 0;
@@ -114,11 +113,29 @@ void setup(){
   Serial.print(" / ");
   Serial.print(WiFi.subnetMask());
   Serial.println();
-  // start the network node
+
+  // start the UAVCAN network node
   uavcan_setup();
   Serial.print("UAVCAN Node ");
   Serial.print(uav_node->serial_node_id);
   Serial.println();
+
+  // attach a listener for heartbeat messages
+  uav_node->subscribe(
+    portid_uavcan_node_Heartbeat_1_0, 
+    dthash_uavcan_node_Heartbeat_1_0, 
+    [](SerialNodeID node_id, UAVInStream& in) {
+      HeartbeatMessage m;
+      in >> m;
+      Serial.println("heartbeat detected {");
+      Serial.print("    node : #"); Serial.print(node_id); Serial.println();
+      Serial.print("  uptime : "); Serial.print(m.uptime); Serial.println("s");
+      Serial.print("  health : "); Serial.print(m.health); Serial.println();
+      Serial.print("    mode : "); Serial.print(m.mode); Serial.println();
+      Serial.print("  vendor : "); Serial.print(m.vendor,16); Serial.println();
+      Serial.println("}");
+    }
+  );
 
   // initialize millisecond timer
   last_time = millis();
@@ -126,7 +143,31 @@ void setup(){
   // begin main loop
 }
 
-void loop(){
+auto info_fn = [](NodeGetInfoReply* info){
+  if(info==nullptr) {
+    Serial.println("node info {}");
+  } else {
+    Serial.println("node info {");
+    Serial.print("     name: "); Serial.print(info->name.c_str()); Serial.println();
+    Serial.print("      uid: ["); for(int i=0; i<16; i++) { Serial.print(info->unique_id[i],16); Serial.print(i==15?"]":" "); } Serial.println();
+    Serial.print(" protocol: v"); Serial.print(info->protocol_version.major); Serial.print("."); Serial.print(info->protocol_version.minor); Serial.println();
+    Serial.print(" hardware: v"); Serial.print(info->hardware_version.major); Serial.print("."); Serial.print(info->hardware_version.minor); Serial.println();
+    Serial.print(" software: v"); Serial.print(info->software_version.major); Serial.print("."); Serial.print(info->software_version.minor); Serial.println();
+    Serial.println("}");
+  }
+};
+
+auto command_fn = [](NodeExecuteCommandReply* reply){
+  if(reply==nullptr) {
+    Serial.println("command result {}");
+  } else {
+    Serial.println("command result {");
+    Serial.print(" status: "); Serial.print(reply->status); Serial.println();
+    Serial.println("}");
+  }
+};
+
+void loop() {
   // update 64 bit system microsecond timer offset
   unsigned long current_micros = micros();
   system_micros_offset += (current_micros-last_micros);
@@ -148,27 +189,23 @@ void loop(){
     jedi_purge-=dt;
     if(jedi_purge<0) {
       jedi_purge = 9000;
+      // log stats
+      // Serial.print("--- heap:"); Serial.print(ESP.getFreeHeap()); Serial.print(" maxfb:"); Serial.print(ESP.getMaxFreeBlockSize()); Serial.println();
+      // do our regular big task
       switch(random(4)) {
         case 0:
-          NodeinfoApp::ExecuteCommand(uav_node, uav_node->serial_node_id, 66, "Execute order 66!", nullptr);
+          NodeinfoApp::ExecuteCommand(uav_node, uav_node->serial_node_id, 66, "Execute order 66!", command_fn);
           break;
         case 1:
-          NodeinfoApp::GetInfo(uav_node, 159, [](NodeGetInfoReply* r){
-            if(r==nullptr) {
-              Serial.println("no reply.");
-            } else {
-              Serial.println("got reply.");
-            }
-          }); // to windows machine, if available
+          NodeinfoApp::GetInfo(uav_node, 159, info_fn); // to windows machine, if available
           break;
         default:
-          NodeinfoApp::GetInfo(uav_node, uav_node->serial_node_id, nullptr); // to self
+          NodeinfoApp::GetInfo(uav_node, uav_node->serial_node_id, info_fn); // to self
           break;
       }
     }
   }
-
   // process OS tasks
-  delay(100);
+  delay(1);
 }
 
