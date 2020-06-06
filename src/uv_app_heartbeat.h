@@ -30,25 +30,26 @@ class HeartbeatMessage {
     public:
         // properties
         uint32_t uptime;  // node uptime
-        // uint8_t status[3]; // node status
         uint8_t health;
         uint8_t mode;
         uint32_t vendor;
         // parser
         friend UAVInStream& operator>>(UAVInStream& s, HeartbeatMessage& v) { 
-            uint8_t  status_a;
-            uint16_t status_b;
-            s >> v.uptime >> status_a >> status_b;
-            v.health = (status_a>>6) & 0x03;
-            v.mode = (status_a>>3) & 0x07;
-            v.health = ((uint32_t)status_a & 0x07) << 16 | (uint32_t)status_b;
+            uint8_t status[3];
+            s >> v.uptime >> status[0] >> status[1] >> status[2];
+            v.health = (status[0]>>6) & 0x03;
+            v.mode = (status[0]>>3) & 0x07;
+            v.vendor = ((uint32_t)status[0] & 0x07) << 16 | (uint32_t)status[1]<<8 | (uint32_t)status[2];
             return s; 
         }
         // serializer
         friend UAVOutStream& operator<<(UAVOutStream& s, const HeartbeatMessage& v) { 
-            uint8_t  status_a = ((v.health & 0x03)<<6) | ((v.mode & 0x07)<<3) | ((v.vendor & 0x070000)>>16);
-            uint16_t status_b = v.vendor & 0x00ffff;
-            return s << v.uptime << status_a << status_b; 
+            uint8_t status[3] = {
+                ((v.health & 0x03)<<6) | ((v.mode & 0x07)<<3) | ((v.vendor & 0x070000)>>16),
+                (v.vendor & 0x00ff00)>>8,
+                (v.vendor & 0x0000ff)
+            };
+            return s << v.uptime << status[0] << status[1] << status[2]; 
         }
 };
 
@@ -71,8 +72,8 @@ class HeartbeatApp : public UAVTask  {
         void send(UAVNode *node);
         // task interface
         void start(UAVNode *node) override;
-        void stop(UAVNode *node) override;
         void loop(unsigned long t,int dt, UAVNode *node) override;
+        void stop(UAVNode *node) override;
 };
 
 #endif

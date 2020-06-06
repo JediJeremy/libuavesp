@@ -5,7 +5,6 @@
 #include "uv_node.h"
 #include "uv_primitive.h"
 
-
 static const     char dtname_uavcan_node_ID_1_0[] PROGMEM = "uavcan.node.ID.1.0";
 static const uint64_t dthash_uavcan_node_ID_1_0 = UAVNode::datatypehash_P(dtname_uavcan_node_ID_1_0);
 class NodeID {
@@ -20,7 +19,6 @@ class NodeID {
             return s << v.value;
         }
 };
-
 
 static const     char dtname_uavcan_node_IOStatistics_1_0[] PROGMEM = "uavcan.node.IOStatistics.0.1";
 static const uint64_t dthash_uavcan_node_IOStatistics_1_0 = UAVNode::datatypehash_P(dtname_uavcan_node_IOStatistics_1_0);
@@ -63,8 +61,6 @@ class NodeVersion {
             return s << v.major << v.minor;
         }
 };
-
-
 
 static const     char dtname_uavcan_node_ExecuteCommand_1_0[] PROGMEM = "uavcan.node.ExecuteCommand.1.0";
 static const uint64_t dthash_uavcan_node_ExecuteCommand_1_0 = UAVNode::datatypehash_P(dtname_uavcan_node_ExecuteCommand_1_0);
@@ -154,9 +150,11 @@ class NodeGetInfoReply {
 class NodeinfoApp {
     public:
         // define the port functions for this app
+        static void service_GetInfo_v1(UAVNode& node, UAVInStream& in, UAVPortReply reply);
+        static void service_ExecuteCommand_v1(UAVNode& node, UAVInStream& in, UAVPortReply reply);
+        // start app on node
         static void app_v1(UAVNode *node);
-        // message requests
-        // static void nodeinfo_request(UAVNode *node, uint32_t remote_node_id);
+        // request API
         static void GetInfo(UAVNode *node, uint32_t node_id, std::function<void(NodeGetInfoReply*)> fn);
         static void ExecuteCommand(UAVNode *node, uint32_t node_id, uint16_t command, char parameter[], std::function<void(NodeExecuteCommandReply*)> fn);
 };

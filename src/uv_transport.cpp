@@ -102,23 +102,26 @@ void UAVOutStream::output_memcpy_P(PGM_P payload, int length) {
     output_remain-=length;
 }
 
-void UAVOutStream::P(PGM_P text) {
+UAVOutStream& UAVOutStream::P(PGM_P text) {
     int length = strlen_P(text);
     output_memcpy_P(text,length);
+    return *this;
 }
 
-void UAVOutStream::P1(PGM_P text, int limit) {
+UAVOutStream& UAVOutStream::P1(PGM_P text, int limit) {
     int length = min(limit,(int)strlen_P(text));
     uint8_t c = length;
     output_memcpy(&c,1);
     output_memcpy_P(text,length);
+    return *this;
 }
 
-void UAVOutStream::P2(PGM_P text, int limit) {
+UAVOutStream& UAVOutStream::P2(PGM_P text, int limit) {
     int length = min(limit,(int)strlen_P(text));
     uint16_t c = length;
     output_memcpy(&c,2);
     output_memcpy_P(text,length);
+    return *this;
 }
 
 /*

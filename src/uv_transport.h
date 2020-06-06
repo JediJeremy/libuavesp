@@ -132,9 +132,9 @@ class UAVOutStream {
         }
         void output_memcpy(const void* payload, int length);
         void output_memcpy_P(PGM_P payload, int length);
-        void P(PGM_P text);
-        void P1(PGM_P text, int limit);
-        void P2(PGM_P text, int limit);
+        UAVOutStream& P(PGM_P text);
+        UAVOutStream& P1(PGM_P text, int limit);
+        UAVOutStream& P2(PGM_P text, int limit);
         friend UAVOutStream& operator<<(UAVOutStream& s, const int8_t& v) { s.output_memcpy((void *)&v,1); return s; }
         friend UAVOutStream& operator<<(UAVOutStream& s, const int16_t& v) { s.output_memcpy((void *)&v,2); return s; }
         friend UAVOutStream& operator<<(UAVOutStream& s, const int32_t& v) { s.output_memcpy((void *)&v,4); return s; }

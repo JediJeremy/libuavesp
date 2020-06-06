@@ -1,37 +1,121 @@
 #include "uv_app_nodeinfo.h"
 
-void NodeinfoApp::GetInfo(UAVNode *node, uint32_t node_id, std::function<void(NodeGetInfoReply*)> fn) {
+void NodeinfoApp::service_GetInfo_v1(UAVNode& node, UAVInStream& in, UAVPortReply reply) {
+    // prepare default reply
+    NodeGetInfoReply r;
+    r.protocol_version.major = 1;
+    r.protocol_version.minor = 0;
+    r.hardware_version.major = 82;
+    r.hardware_version.minor = 12;
+    r.software_version.major = 1;
+    r.software_version.minor = 0;
+    // use a temp stream to pack unique hardware id bytes
+    UAVOutStream uid(r.unique_id,16);
+    uid.P(PSTR("ESP-8266")) << ESP.getChipId() << ESP.getFlashChipId();
+    // friendly name
+    r.name.assign("ESP 8266");
+    // fill the vcs revision id
+    String md5 = ESP.getSketchMD5();
+    uint64_t hash = 0;
+    for(int i=0; i<16; i++) {
+        char c = md5[i];
+        hash = hash << 4;
+        if((c>='0') & (c<='9')) hash |= (c-'0');
+        if((c>='a') & (c<='f')) hash |= (c-'a'+10);
+    }
+    r.software_image_crc_count = 1;
+    r.software_image_crc = hash;
+    // stream the message into a buffer
+    uint8_t buffer[256];
+    UAVOutStream out(buffer,256);
+    out << r;
+    // send reply
+    reply(out);
+}
+
+void NodeinfoApp::service_ExecuteCommand_v1(UAVNode& node, UAVInStream& in, UAVPortReply reply) {
+    // prepare default reply
+    NodeExecuteCommandReply r;
+    r.status = 0; // success status. all the non-zero codes are errors
+    // decode the request
+    NodeExecuteCommandRequest request;
+    in >> request;
+    Serial.print("command["); Serial.print(request.command); Serial.print("] "); Serial.println(request.parameter.c_str());
+    switch(request.command) {
+        case 65535: // COMMAND_RESTART
+        case 65534: // COMMAND_POWER_OFF
+        case 65533: // COMMAND_BEGIN_SOFTWARE_UPDATE
+        case 65532: // COMMAND_FACTORY_RESET
+        case 65531: // COMMAND_EMERGENCY_STOP
+        case 65530: // COMMAND_STORE_PERSISTENT_STATES
+            r.status = 5; // STATUS_BAD_STATE
+            break;
+        default:
+            r.status = 3; // STATUS_BAD_COMMAND
+            break;
+    }
+    // send reply
+    uint8_t buffer[32];
+    UAVOutStream out(buffer,32);
+    out << r;
+    reply(out);
+}
+
+// define the port and functions for this app
+void NodeinfoApp::app_v1(UAVNode *node) {
+    // node.GetInfo service call
+    node->ports.define_service( 
+        portid_uavcan_node_GetInfo_1_0,
+        dtname_uavcan_node_GetInfo_1_0,
+        true,
+        service_GetInfo_v1
+    );
+    // node.ExecuteCommand service call
+    node->ports.define_service( 
+        portid_uavcan_node_ExecuteCommand_1_0, 
+        dtname_uavcan_node_ExecuteCommand_1_0, 
+        true,
+        service_ExecuteCommand_v1
+    );
+}
+
+
+void NodeinfoApp::GetInfo(UAVNode* node, uint32_t node_id, std::function<void(NodeGetInfoReply*)> fn) {
     // send the next heartbeat message
     node->request(
         node_id, 
-        portid_uavcan_node_GetInfo_1_0, dthash_uavcan_node_GetInfo_1_0, 
+        portid_uavcan_node_GetInfo_1_0, 
+        dthash_uavcan_node_GetInfo_1_0, 
         CanardPriorityNominal, 
         nullptr, 0, 
         [fn](UAVInStream& in) {
             if(fn!=nullptr) {
-                NodeGetInfoReply info;
-                in >> info;
-                fn(&info);
+                if(in.input_index) {
+                    NodeGetInfoReply info;
+                    in >> info;
+                    fn(&info);
+                } else {
+                    fn(nullptr);
+                }
             }
         }
     );
 }
 
-
-void NodeinfoApp::ExecuteCommand(UAVNode *node, uint32_t node_id, uint16_t command, char parameter[], std::function<void(NodeExecuteCommandReply*)> fn) {
+void NodeinfoApp::ExecuteCommand(UAVNode* node, uint32_t node_id, uint16_t command, char parameter[], std::function<void(NodeExecuteCommandReply*)> fn) {
     // send the next heartbeat message
     uint8_t payload[256];
-    UAVOutStream stream(payload,256);
-    NodeExecuteCommandRequest req;
-    req.command = command;
-    req.parameter.assign(parameter);
-    stream << req;
+    UAVOutStream out(payload,256);
+    NodeExecuteCommandRequest r;
+    r.command = command;
+    r.parameter.assign(parameter);
+    out << r;
     node->request(
         node_id, 
         portid_uavcan_node_ExecuteCommand_1_0, 
         dthash_uavcan_node_ExecuteCommand_1_0, 
         CanardPriorityNominal, 
-        stream, //.output_buffer, stream.output_index, 
+        out, 
         [fn](UAVInStream& in) {
             if(fn!=nullptr) {
                 if(in.input_index) {
@@ -45,81 +129,3 @@ void NodeinfoApp::ExecuteCommand(UAVNode *node, uint32_t node_id, uint16_t comma
         }
     );
 }
-
-// define the port and functions for this app
-void NodeinfoApp::app_v1(UAVNode *node) {
-    // node.GetInfo service call
-    node->ports.define_service( 
-        portid_uavcan_node_GetInfo_1_0,
-        dtname_uavcan_node_GetInfo_1_0,
-        true,
-        [](UAVNode * node, UAVInStream& in, UAVPortReply reply) {
-            // prepare default reply
-            NodeGetInfoReply res;
-            res.protocol_version.major = 1;
-            res.protocol_version.minor = 0;
-            res.hardware_version.major = 82;
-            res.hardware_version.minor = 12;
-            res.software_version.major = 1;
-            res.software_version.minor = 0;
-            
-            // use a temp stream to pack unique hardware id bytes
-            UAVOutStream unique_id(res.unique_id,16);
-            unique_id.P(PSTR("ESP-8266"));
-            unique_id << ESP.getChipId();
-            unique_id << ESP.getFlashChipId();
-            // friendly name
-            res.name.assign("ESP 8266");
-            // fill the vcs revision id
-            String md5 = ESP.getSketchMD5();
-            uint64_t hash = 0;
-            for(int i=0; i<16; i++) {
-                char c = md5[i];
-                hash = hash << 4;
-                if((c>='0') & (c<='9')) hash |= (c-'0');
-                if((c>='a') & (c<='f')) hash |= (c-'a'+10);
-            }
-            res.software_image_crc_count = 1;
-            res.software_image_crc = hash;
-            // stream the message into a buffer
-            uint8_t buffer[256];
-            UAVOutStream out(buffer,256);
-            out << res;
-            // send reply
-            reply(out);
-        });
-    // node.ExecuteCommand service call
-    node->ports.define_service( 
-        portid_uavcan_node_ExecuteCommand_1_0, 
-        dtname_uavcan_node_ExecuteCommand_1_0, 
-        true,
-        [](UAVNode * node, UAVInStream& in, UAVPortReply reply) {
-            // Serial.println("ExecuteCommand request recieved!");
-            // prepare default reply
-            NodeExecuteCommandReply res;
-            res.status = 0; // success status. all the non-zero codes are errors
-            // decode the request
-            NodeExecuteCommandRequest req;
-            in >> req;
-            Serial.print("command["); Serial.print(req.command); Serial.print("] "); Serial.println(req.parameter.c_str());
-            switch(req.command) {
-                case 65535: // COMMAND_RESTART
-                case 65534: // COMMAND_POWER_OFF
-                case 65533: // COMMAND_BEGIN_SOFTWARE_UPDATE
-                case 65532: // COMMAND_FACTORY_RESET
-                case 65531: // COMMAND_EMERGENCY_STOP
-                case 65530: // COMMAND_STORE_PERSISTENT_STATES
-                    res.status = 5; // STATUS_BAD_STATE
-                    break;
-                default:
-                    res.status = 3; // STATUS_BAD_COMMAND
-                    break;
-            }
-            // send reply
-            uint8_t buffer[32];
-            UAVOutStream out(buffer,32);
-            out << res;
-            reply(out);
-        });
-}
-

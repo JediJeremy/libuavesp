@@ -27,7 +27,7 @@ using UAVPortReply = std::function<void(UAVOutStream& out)>;
 // port function callback
 // using UAVPortFunction = void (*) (UAVNode * node, uint8_t* payload, int payload_size, UAVPortReply reply);
 // using UAVPortFunction = std::function<void(UAVNode * node, uint8_t* payload, int payload_size, UAVPortReply reply)>;
-using UAVPortFunction = std::function<void(UAVNode * node, UAVInStream& in, UAVPortReply reply)>;
+using UAVPortFunction = std::function<void(UAVNode& node, UAVInStream& in, UAVPortReply reply)>;
 
 // generic properties for a port
 class UAVPortInfo {
@@ -82,15 +82,13 @@ class UAVNode {
         int _task_timer = 0;
         std::vector<UAVTask *> _tasks;
         // service maps
-        //std::map<uint16_t, UAVPortListener> _port_map;
-        // std::map< std::pair<uint16_t,uint16_t>, UAVPortListener> _session_map;
         std::map< std::tuple<CanardPortID,SerialTransferID>, UAVPortRequest> _requests_inflight;
         std::multimap< uint32_t, std::tuple<CanardPortID,SerialTransferID>> _requests_timeout;
-        // std::multimap< uint32_t, void(*)()> _timer_events;
         std::map< std::tuple<SerialNodeID,CanardPortID>, UAVPortListener> _subscribe_nodeport;
         std::map< CanardPortID, UAVPortListener> _subscribe_port;
         std::map< std::tuple<CanardPortID,uint64_t>, UAVPortListener> _subscribe_portdata;
         // timeout management
+        // std::multimap< uint32_t, void(*)()> _timer_events;
         void process_timeouts(uint32_t t1_ms, uint32_t t2_ms);
     public:
         UAVPortList ports;

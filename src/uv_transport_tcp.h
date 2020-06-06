@@ -27,16 +27,17 @@ class TCPSerialTransport : public SerialTransport {
     protected:
         WiFiClient * _client;
     public:
+        UAVNode * unique_node = nullptr;
         TCPSerialTransport (WiFiClient* client, UAVSerialPort *port, bool owner, SerialOOBHandler oob);
         virtual ~TCPSerialTransport();
         void close();
         bool closed();
-        // void loop(const unsigned long t, const int dt, UAVNode* node);
 };
 
 class TCPNode {
     protected:
-        UAVNode * _node;
+        UAVNode * _node = nullptr;
+        std::function<UAVNode*()> _node_fn;
         WiFiServer *_server;
         std::vector<TCPSerialTransport *>_clients;
         int _client_count = 0;
@@ -46,6 +47,7 @@ class TCPNode {
         SerialOOBHandler oob_handler = nullptr;
         // con/destructors
         TCPNode (int server_port, UAVNode * node, bool debug, SerialOOBHandler oob);
+        TCPNode (int server_port, std::function<UAVNode*()> node_fn, bool debug, SerialOOBHandler oob);
         virtual ~TCPNode();
         // tcp server interface
         bool start();

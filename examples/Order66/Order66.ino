@@ -22,8 +22,8 @@ auto system_time_us = []()->uint64_t {
 unsigned long last_time = 0;
 
 
-HardwareSerialPort serial_port_0(&Serial);
-DebugSerialPort debug_port_0(&serial_port_0,false);
+HardwareSerialPort serial_port_0(Serial);
+DebugSerialPort debug_port_0(serial_port_0);
 UAVNode * uav_node;
 TCPNode * tcp_node;
 TCPNode * tcp_debug;
@@ -61,14 +61,15 @@ void uavcan_setup() {
   uav_node->serial_node_id = addr & UV_SERIAL_NODEID_MASK;
   
   // add a loopback serial transport for testing
-  SerialTransport* loopback = new SerialTransport( new LoopbackSerialPort(), true, serial_oob);
-  // loopback->oob_handler = serial_oob;
-  uav_node->serial_add( loopback );
+  uav_node->serial_add( new SerialTransport( new LoopbackSerialPort(), true, serial_oob ) );
 
-  // enable the serial transport on debug port 0
-  // SerialTransport* serial = new SerialTransport(&debug_port_0, false, serial_oob);
-  // uav_node->serial_add( serial );
+  // enable the serial transport on port 0 (or debug)
+  //uav_node->serial_add( new SerialTransport(serial_port_0) );
+  //uav_node->serial_add( new SerialTransport(debug_port_0) );
 
+  // TCP servers are complicated because each connection could route to a unique node.
+  // but for now all TCP nodes connect to the single central uav_node.
+  
   // start a tcp server over the node on port 66
   tcp_node = new TCPNode(66,uav_node,false,tcp_oob);
 
@@ -113,8 +114,7 @@ void setup(){
   Serial.print(" / ");
   Serial.print(WiFi.subnetMask());
   Serial.println();
-
-  // start the UAVCAN network node
+  // start the network node
   uavcan_setup();
   Serial.print("UAVCAN Node ");
   Serial.print(uav_node->serial_node_id);
@@ -136,6 +136,8 @@ void setup(){
       Serial.println("}");
     }
   );
+  // crc speed tests
+  // test_crc32();
 
   // initialize millisecond timer
   last_time = millis();
@@ -148,11 +150,11 @@ auto info_fn = [](NodeGetInfoReply* info){
     Serial.println("node info {}");
   } else {
     Serial.println("node info {");
-    Serial.print("     name: "); Serial.print(info->name.c_str()); Serial.println();
-    Serial.print("      uid: ["); for(int i=0; i<16; i++) { Serial.print(info->unique_id[i],16); Serial.print(i==15?"]":" "); } Serial.println();
-    Serial.print(" protocol: v"); Serial.print(info->protocol_version.major); Serial.print("."); Serial.print(info->protocol_version.minor); Serial.println();
-    Serial.print(" hardware: v"); Serial.print(info->hardware_version.major); Serial.print("."); Serial.print(info->hardware_version.minor); Serial.println();
-    Serial.print(" software: v"); Serial.print(info->software_version.major); Serial.print("."); Serial.print(info->software_version.minor); Serial.println();
+    Serial.print("     name : "); Serial.print(info->name.c_str()); Serial.println();
+    Serial.print("      uid : ["); for(int i=0; i<16; i++) { Serial.print(info->unique_id[i],16); Serial.print(i==15?"]":" "); } Serial.println();
+    Serial.print(" protocol : v"); Serial.print(info->protocol_version.major); Serial.print("."); Serial.print(info->protocol_version.minor); Serial.println();
+    Serial.print(" hardware : v"); Serial.print(info->hardware_version.major); Serial.print("."); Serial.print(info->hardware_version.minor); Serial.println();
+    Serial.print(" software : v"); Serial.print(info->software_version.major); Serial.print("."); Serial.print(info->software_version.minor); Serial.println();
     Serial.println("}");
   }
 };
@@ -162,7 +164,7 @@ auto command_fn = [](NodeExecuteCommandReply* reply){
     Serial.println("command result {}");
   } else {
     Serial.println("command result {");
-    Serial.print(" status: "); Serial.print(reply->status); Serial.println();
+    Serial.print(" status : "); Serial.print(reply->status); Serial.println();
     Serial.println("}");
   }
 };
@@ -190,7 +192,7 @@ void loop() {
     if(jedi_purge<0) {
       jedi_purge = 9000;
       // log stats
-      // Serial.print("--- heap:"); Serial.print(ESP.getFreeHeap()); Serial.print(" maxfb:"); Serial.print(ESP.getMaxFreeBlockSize()); Serial.println();
+      Serial.print("--- heap:"); Serial.print(ESP.getFreeHeap()); Serial.print(" maxfb:"); Serial.print(ESP.getMaxFreeBlockSize()); Serial.println();
       // do our regular big task
       switch(random(4)) {
         case 0:

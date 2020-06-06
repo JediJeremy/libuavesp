@@ -285,12 +285,20 @@ void UAVNode::serial_receive(SerialTransfer *transfer) {
         if(port!=nullptr) {
             if(transfer->transfer_kind == CanardTransferKindRequest) {
                 // create a reply handler for use by the functions.
-                UAVPortReply reply = [transfer,this](UAVOutStream& out)->void {
-                    respond(transfer->remote_node_id, transfer->port_id, transfer->transfer_id, transfer->datatype, transfer->priority, out.output_buffer, out.output_index);
+                bool reply_called = false;
+                UAVPortReply reply = [transfer,this,&reply_called](UAVOutStream& out)->void {
+                    reply_called = true;
+                    respond(
+                        transfer->remote_node_id, transfer->port_id, 
+                        transfer->transfer_id, transfer->datatype, 
+                        transfer->priority, 
+                        out.output_buffer, out.output_index
+                    );
                 };
                 // give any port request handlers the chance to reply
                 for(auto fn : port->on_request) {
-                    fn(this, in, reply );
+                    fn(*this, in, reply);
+                    if(reply_called) break;
                 }
             }
             if(transfer->transfer_kind == CanardTransferKindResponse) {
