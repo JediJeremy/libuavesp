@@ -5,6 +5,7 @@
 #include "uv_node.h"
 #include <string>
 
+
 // primitive types
 static const char     dtname_uavcan_primitive_Empty_1_0[] PROGMEM = "uavcan.primitive.Empty.1.0";
 static const char     dtname_uavcan_primitive_String_1_0[] PROGMEM = "uavcan.primitive.String.1.0";
@@ -16,80 +17,6 @@ uint16_t float_to_fp16(float f);
 // utility method for fastest-possible determination of MSB set of byte value. returns bit index from 1..8, or 0 if all zero bits.
 uint8_t  first_uint8_onebit(uint8_t v);
 
-
-class UAVInStream {
-    public:
-        uint8_t* input_buffer;
-        int input_size;
-        int input_index;
-        int input_remain;
-        UAVInStream(uint8_t* buffer, int size) {
-            input_buffer = buffer;
-            input_size = size;
-            input_index = 0;
-            input_remain = size;
-        }
-        void input_memcpy(void* payload, int length);
-        friend UAVInStream& operator>>(UAVInStream& s, int8_t& v) { s.input_memcpy((void *)&v,1); return s; }
-        friend UAVInStream& operator>>(UAVInStream& s, int16_t& v) { s.input_memcpy((void *)&v,2); return s; }
-        friend UAVInStream& operator>>(UAVInStream& s, int32_t& v) { s.input_memcpy((void *)&v,4); return s; }
-        friend UAVInStream& operator>>(UAVInStream& s, int64_t& v) { s.input_memcpy((void *)&v,8); return s; }
-        friend UAVInStream& operator>>(UAVInStream& s, uint8_t& v) { s.input_memcpy((void *)&v,1); return s; }
-        friend UAVInStream& operator>>(UAVInStream& s, uint16_t& v) { s.input_memcpy((void *)&v,2); return s; }
-        friend UAVInStream& operator>>(UAVInStream& s, uint32_t& v) { s.input_memcpy((void *)&v,4); return s; }
-        friend UAVInStream& operator>>(UAVInStream& s, uint64_t& v) { s.input_memcpy((void *)&v,8); return s; }
-        friend UAVInStream& operator>>(UAVInStream& s, float& v) { s.input_memcpy((void *)&v,4); return s; }
-        friend UAVInStream& operator>>(UAVInStream& s, double& v) { s.input_memcpy((void *)&v,8); return s; }
-        friend UAVInStream& operator>>(UAVInStream& s, std::string& v) { 
-            uint8_t c;
-            s.input_memcpy((void *)&c,1);
-            v.resize(c);
-            s.input_memcpy((void *)v.data(),(int)c); return s; 
-        }
-};
-
-class UAVOutStream {
-    public:
-        uint8_t* output_buffer;
-        int output_size;
-        int output_index;
-        int output_remain;
-        UAVOutStream(uint8_t* buffer, int size) {
-            output_buffer = buffer;
-            output_size = size;
-            output_index = 0;
-            output_remain = size;
-        }
-        void output_memcpy(const void* payload, int length);
-        void output_memcpy_P(PGM_P payload, int length);
-        void P(PGM_P text);
-        void P1(PGM_P text, int limit);
-        void P2(PGM_P text, int limit);
-        friend UAVOutStream& operator<<(UAVOutStream& s, const int8_t& v) { s.output_memcpy((void *)&v,1); return s; }
-        friend UAVOutStream& operator<<(UAVOutStream& s, const int16_t& v) { s.output_memcpy((void *)&v,2); return s; }
-        friend UAVOutStream& operator<<(UAVOutStream& s, const int32_t& v) { s.output_memcpy((void *)&v,4); return s; }
-        friend UAVOutStream& operator<<(UAVOutStream& s, const int64_t& v) { s.output_memcpy((void *)&v,8); return s; }
-        friend UAVOutStream& operator<<(UAVOutStream& s, const uint8_t& v) { s.output_memcpy((void *)&v,1); return s; }
-        friend UAVOutStream& operator<<(UAVOutStream& s, const uint16_t& v) { s.output_memcpy((void *)&v,2); return s; }
-        friend UAVOutStream& operator<<(UAVOutStream& s, const uint32_t& v) { s.output_memcpy((void *)&v,4); return s; }
-        friend UAVOutStream& operator<<(UAVOutStream& s, const uint64_t& v) { s.output_memcpy((void *)&v,8); return s; }
-        friend UAVOutStream& operator<<(UAVOutStream& s, const float& v) { s.output_memcpy((void *)&v,4); return s; }
-        friend UAVOutStream& operator<<(UAVOutStream& s, const double& v) { s.output_memcpy((void *)&v,8); return s; }
-        friend UAVOutStream& operator<<(UAVOutStream& s, const char v[]) {
-            uint8_t c = min(0xFF, (int)strlen(v));
-            s.output_memcpy((void *)&c,1);
-            s.output_memcpy((void *)v,(int)c);
-            return s; 
-        }
-        friend UAVOutStream& operator<<(UAVOutStream& s, const std::string& v) { /// remove 'const' for greatest number of errors!
-            auto len = v.size();
-            uint8_t c = min(0xFF, (int)len);
-            s.output_memcpy((void *)&c,1);
-            s.output_memcpy((void *)v.data(),(int)c);
-            return s; 
-        }
-        // friend UAVOutStream& operator<<(UAVOutStream& s, const PGM_P& v) { s.output_memcpy_P(v,strlen_P(v)); return s; }
-};
 
 /*
 class UAVPrimitiveEmpty {

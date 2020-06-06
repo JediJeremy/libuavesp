@@ -20,10 +20,14 @@ class UAVTask {
 
 // if our portfunction needs to send a reply, that interface is provided through here
 // using UAVPortReply = void (*) (uint8_t* payload, int payload_size);
-using UAVPortReply = std::function<void(uint8_t* payload, int payload_size)>;
+// using UAVPortReply = std::function<void(uint8_t* payload, int payload_size)>;
+using UAVPortListener = std::function<void(SerialNodeID node_id, UAVInStream& in)>;
+using UAVPortRequest = std::function<void(UAVInStream& in)>;
+using UAVPortReply = std::function<void(UAVOutStream& out)>;
 // port function callback
 // using UAVPortFunction = void (*) (UAVNode * node, uint8_t* payload, int payload_size, UAVPortReply reply);
-using UAVPortFunction = std::function<void(UAVNode * node, uint8_t* payload, int payload_size, UAVPortReply reply)>;
+// using UAVPortFunction = std::function<void(UAVNode * node, uint8_t* payload, int payload_size, UAVPortReply reply)>;
+using UAVPortFunction = std::function<void(UAVNode * node, UAVInStream& in, UAVPortReply reply)>;
 
 // generic properties for a port
 class UAVPortInfo {
@@ -80,12 +84,12 @@ class UAVNode {
         // service maps
         //std::map<uint16_t, UAVPortListener> _port_map;
         // std::map< std::pair<uint16_t,uint16_t>, UAVPortListener> _session_map;
-        std::map< std::tuple<CanardPortID,SerialTransferID>, UAVPortReply> _requests_inflight;
+        std::map< std::tuple<CanardPortID,SerialTransferID>, UAVPortRequest> _requests_inflight;
         std::multimap< uint32_t, std::tuple<CanardPortID,SerialTransferID>> _requests_timeout;
         // std::multimap< uint32_t, void(*)()> _timer_events;
-        std::map< std::tuple<SerialNodeID,CanardPortID>, UAVPortReply> _subscribe_nodeport;
-        std::map< CanardPortID, UAVPortReply> _subscribe_port;
-        std::map< std::tuple<CanardPortID,uint64_t>, UAVPortReply> _subscribe_portdata;
+        std::map< std::tuple<SerialNodeID,CanardPortID>, UAVPortListener> _subscribe_nodeport;
+        std::map< CanardPortID, UAVPortListener> _subscribe_port;
+        std::map< std::tuple<CanardPortID,uint64_t>, UAVPortListener> _subscribe_portdata;
         // timeout management
         void process_timeouts(uint32_t t1_ms, uint32_t t2_ms);
     public:
@@ -108,12 +112,14 @@ class UAVNode {
         void task_add(UAVTask *task);
         void task_remove(UAVTask *task);
         // publish and subscribe methods
-        void publish(uint16_t port, uint64_t datatype, CanardPriority priority, uint8_t * payload, size_t size, std::function<void()> callback);
-        void request(uint16_t node_id, uint16_t port, uint64_t datatype, CanardPriority priority, uint8_t * payload, size_t size, UAVPortReply callback);
+        void publish(uint16_t port, uint64_t datatype, CanardPriority priority, uint8_t * payload, int size, std::function<void()> callback);
+        void publish(uint16_t port, uint64_t datatype, CanardPriority priority, UAVOutStream& out, std::function<void()> callback);
+        void request(uint16_t node_id, uint16_t port, uint64_t datatype, CanardPriority priority, uint8_t * payload, int size, UAVPortRequest callback);
+        void request(uint16_t node_id, uint16_t port, uint64_t datatype, CanardPriority priority, UAVOutStream& out, UAVPortRequest callback);
         void respond(uint16_t node_id, uint16_t port, uint64_t transfer_id, uint64_t datatype, CanardPriority priority, uint8_t * payload, size_t size);
-        void subscribe(uint16_t remote_node_id, uint16_t port, UAVPortReply fn);
-        void subscribe(uint16_t port, UAVPortReply fn);
-        void subscribe(uint16_t port, uint64_t datatype, UAVPortReply fn);
+        void subscribe(uint16_t remote_node_id, uint16_t port, UAVPortListener fn);
+        void subscribe(uint16_t port, UAVPortListener fn);
+        void subscribe(uint16_t port, uint64_t datatype, UAVPortListener fn);
         // datatype hash functions - used to turn arbitrary-length full datatype names into fixed-length integers with group-sortable semantics
         static uint64_t datatypehash(const char *name);
         static uint64_t datatypehash_P(PGM_P name, size_t size);

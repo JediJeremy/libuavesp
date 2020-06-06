@@ -276,6 +276,8 @@ void UAVNode::debug_transfer(SerialTransfer *transfer) {
 
 void UAVNode::serial_receive(SerialTransfer *transfer) {
     debug_transfer(transfer);
+    // wrap an input stream around the transfer buffer
+    UAVInStream in(transfer->payload, transfer->payload_size);
     // was this message sent specifically to us?
     if(transfer->local_node_id==serial_node_id) {
         // do we have port functions waiting for this?
@@ -283,12 +285,12 @@ void UAVNode::serial_receive(SerialTransfer *transfer) {
         if(port!=nullptr) {
             if(transfer->transfer_kind == CanardTransferKindRequest) {
                 // create a reply handler for use by the functions.
-                UAVPortReply reply = [transfer,this](uint8_t* payload, int payload_size)->void {
-                    respond(transfer->remote_node_id, transfer->port_id, transfer->transfer_id, transfer->datatype, transfer->priority, payload, payload_size);
+                UAVPortReply reply = [transfer,this](UAVOutStream& out)->void {
+                    respond(transfer->remote_node_id, transfer->port_id, transfer->transfer_id, transfer->datatype, transfer->priority, out.output_buffer, out.output_index);
                 };
                 // give any port request handlers the chance to reply
                 for(auto fn : port->on_request) {
-                    fn(this, transfer->payload, transfer->payload_size, reply );
+                    fn(this, in, reply );
                 }
             }
             if(transfer->transfer_kind == CanardTransferKindResponse) {
@@ -306,8 +308,8 @@ void UAVNode::serial_receive(SerialTransfer *transfer) {
                     */
                 } else {
                     // it was there, call it
-                    auto callback = it->second;
-                    callback(transfer->payload, transfer->payload_size);
+                    auto fn = it->second;
+                    fn(in);
                     // erase it from the index now it's complete
                     _requests_inflight.erase(it);
                 } 
@@ -315,8 +317,10 @@ void UAVNode::serial_receive(SerialTransfer *transfer) {
         }
     } else if(transfer->local_node_id == 0xFFFF) {
         // subject broadcast. do we have any subscriptions for this?
-        // ...
-        
+        // check the port/datatype combined index
+        auto key = std::make_tuple(transfer->port_id, transfer->datatype);
+        auto fn = _subscribe_portdata[key];
+        if(fn!=nullptr) fn(transfer->remote_node_id, in);
     } else {
         // this transfer wasn't a public broadcast or directly for us but we saw it anyway.
         // odds are we won't know what to do with it, except log it if we're in some kind
@@ -336,7 +340,8 @@ void UAVNode::process_timeouts(uint32_t t1_ms, uint32_t t2_ms) {
             auto e = _requests_inflight.find(key);
             if(e!=_requests_inflight.end()) {
                 // it's still there. call back the request function FOR NOW with no data. this may split into an error path
-                e->second(nullptr, 0);
+                UAVInStream nullstream(nullptr,0);
+                e->second(nullstream);
                 // we have dealt with the request
                 _requests_inflight.erase(e);
             }
@@ -380,8 +385,11 @@ void UAVNode::loop(const unsigned long t, const int dt) {
     }
 }
 
+void UAVNode::publish(uint16_t port, uint64_t datatype, CanardPriority priority, UAVOutStream& out, std::function<void()> callback) {
+    publish(port, datatype, priority, out.output_buffer, out.output_index, callback);
+}
 
-void UAVNode::publish(uint16_t port, uint64_t datatype, CanardPriority priority, uint8_t* payload, size_t size, std::function<void()> callback) {
+void UAVNode::publish(uint16_t port, uint64_t datatype, CanardPriority priority, uint8_t* payload, int size, std::function<void()> callback) {
     // active CAN transport?
     /*
     if(_canard!=NULL) {
@@ -428,7 +436,11 @@ void UAVNode::publish(uint16_t port, uint64_t datatype, CanardPriority priority,
     }
 }
 
-void UAVNode::request(uint16_t node_id, uint16_t port, uint64_t datatype, CanardPriority priority, uint8_t* payload, size_t size, UAVPortReply callback) {
+void UAVNode::request(uint16_t node_id, uint16_t port, uint64_t datatype, CanardPriority priority, UAVOutStream& out, UAVPortRequest callback) {
+    request(node_id, port, datatype, priority, out.output_buffer, out.output_index, callback);
+}
+
+void UAVNode::request(uint16_t node_id, uint16_t port, uint64_t datatype, CanardPriority priority, uint8_t* payload, int size, UAVPortRequest callback) {
     // active CAN transport?
     /*
     if(_canard!=NULL) {
@@ -475,7 +487,10 @@ void UAVNode::request(uint16_t node_id, uint16_t port, uint64_t datatype, Canard
             // none of the transports were able to accept it right now, treat it as complete
             SerialTransport::transfer_complete(transfer);
             // callback with empty reply (FOR NOW... recommend splitting this into an eror path)
-            if(callback) callback(nullptr,0);
+            if(callback) {
+                UAVInStream nullstream(nullptr,0);
+                callback(nullstream);
+            }
         } else {
             // put the callback into the requests index
             auto key = std::make_tuple(transfer->port_id, transfer->transfer_id);
@@ -522,16 +537,16 @@ void UAVNode::respond(uint16_t node_id, uint16_t port, uint64_t transfer_id, uin
     }
 }
 
-void UAVNode::subscribe(uint16_t remote_node_id, uint16_t port, UAVPortReply fn) { 
+void UAVNode::subscribe(uint16_t remote_node_id, uint16_t port, UAVPortListener fn) { 
     auto key = std::make_tuple(remote_node_id, port);
     _subscribe_nodeport[key] = fn;
 }
 
-void UAVNode::subscribe(uint16_t port, UAVPortReply fn) { 
+void UAVNode::subscribe(uint16_t port, UAVPortListener fn) { 
     _subscribe_port[port] = fn;
 }
 
-void UAVNode::subscribe(uint16_t port, uint64_t datatype, UAVPortReply fn) { 
+void UAVNode::subscribe(uint16_t port, uint64_t datatype, UAVPortListener fn) { 
     auto key = std::make_tuple(port, datatype);
     _subscribe_portdata[key] = fn;
 }

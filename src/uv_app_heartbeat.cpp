@@ -2,9 +2,12 @@
 
 
 void HeartbeatApp::set_status(uint8_t health, uint8_t mode, uint32_t vendor) {
-    _message.status[0] = ((health & 0x03)<<6) | ((mode & 0x07)<<3) | ((vendor & 0x070000)>>16);
+    /* _message.status[0] = ((health & 0x03)<<6) | ((mode & 0x07)<<3) | ((vendor & 0x070000)>>16);
     _message.status[1] = (vendor & 0x00ff00)>>8;
-    _message.status[2] = (vendor & 0x0000ff)>>0;
+    _message.status[2] = (vendor & 0x0000ff)>>0; */
+    _message.health = health;
+    _message.mode = mode;
+    _message.vendor = vendor;
 }
 
 void HeartbeatApp::send(UAVNode *node) {

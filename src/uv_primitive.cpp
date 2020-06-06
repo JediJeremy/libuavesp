@@ -2,47 +2,6 @@
 
 
 
-void UAVInStream::input_memcpy(void* payload, int length) {
-    if(input_remain<length) return;
-    memcpy( payload, &input_buffer[input_index], length);
-    input_index+=length;
-    input_remain-=length;
-}
-
-
-void UAVOutStream::output_memcpy(const void* payload, int length) {
-    if(output_remain<length) return;
-    memcpy( &output_buffer[output_index], payload, length);
-    output_index+=length;
-    output_remain-=length;
-}
-
-void UAVOutStream::output_memcpy_P(PGM_P payload, int length) {
-    if(output_remain<length) return;
-    memcpy_P( &output_buffer[output_index], payload, length);
-    output_index+=length;
-    output_remain-=length;
-}
-
-void UAVOutStream::P(PGM_P text) {
-    int length = strlen_P(text);
-    output_memcpy_P(text,length);
-}
-
-void UAVOutStream::P1(PGM_P text, int limit) {
-    int length = min(limit,(int)strlen_P(text));
-    uint8_t c = length;
-    output_memcpy(&c,1);
-    output_memcpy_P(text,length);
-}
-
-void UAVOutStream::P2(PGM_P text, int limit) {
-    int length = min(limit,(int)strlen_P(text));
-    uint16_t c = length;
-    output_memcpy(&c,2);
-    output_memcpy_P(text,length);
-}
-
 /*! \brief Return the index of the most significent bit set. 8==msb, 1==lsb, 0==none
     \param f the byte to search for bits
 */

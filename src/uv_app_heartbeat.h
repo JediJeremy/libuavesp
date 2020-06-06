@@ -30,18 +30,25 @@ class HeartbeatMessage {
     public:
         // properties
         uint32_t uptime;  // node uptime
-        uint8_t status[3]; // node status
+        // uint8_t status[3]; // node status
+        uint8_t health;
+        uint8_t mode;
+        uint32_t vendor;
         // parser
         friend UAVInStream& operator>>(UAVInStream& s, HeartbeatMessage& v) { 
-            s >> v.uptime; 
-            s >> v.status[0] >> v.status[1] >> v.status[2];
+            uint8_t  status_a;
+            uint16_t status_b;
+            s >> v.uptime >> status_a >> status_b;
+            v.health = (status_a>>6) & 0x03;
+            v.mode = (status_a>>3) & 0x07;
+            v.health = ((uint32_t)status_a & 0x07) << 16 | (uint32_t)status_b;
             return s; 
         }
         // serializer
         friend UAVOutStream& operator<<(UAVOutStream& s, const HeartbeatMessage& v) { 
-            s << v.uptime; 
-            s << v.status[0] << v.status[1] << v.status[2];
-            return s; 
+            uint8_t  status_a = ((v.health & 0x03)<<6) | ((v.mode & 0x07)<<3) | ((v.vendor & 0x070000)>>16);
+            uint16_t status_b = v.vendor & 0x00ffff;
+            return s << v.uptime << status_a << status_b; 
         }
 };
 
