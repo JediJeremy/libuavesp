@@ -65,16 +65,14 @@ void NodeinfoApp::service_ExecuteCommand_v1(UAVNode& node, UAVInStream& in, UAVP
 void NodeinfoApp::app_v1(UAVNode *node) {
     // node.GetInfo service call
     node->ports.define_service( 
-        portid_uavcan_node_GetInfo_1_0,
+        serviceid_uavcan_node_GetInfo_1_0,
         dtname_uavcan_node_GetInfo_1_0,
-        true,
         service_GetInfo_v1
     );
     // node.ExecuteCommand service call
     node->ports.define_service( 
-        portid_uavcan_node_ExecuteCommand_1_0, 
+        serviceid_uavcan_node_ExecuteCommand_1_0, 
         dtname_uavcan_node_ExecuteCommand_1_0, 
-        true,
         service_ExecuteCommand_v1
     );
 }
@@ -84,7 +82,7 @@ void NodeinfoApp::GetInfo(UAVNode* node, uint32_t node_id, std::function<void(No
     // send the next heartbeat message
     node->request(
         node_id, 
-        portid_uavcan_node_GetInfo_1_0, 
+        serviceid_uavcan_node_GetInfo_1_0, 
         dthash_uavcan_node_GetInfo_1_0, 
         CanardPriorityNominal, 
         nullptr, 0, 
@@ -112,7 +110,7 @@ void NodeinfoApp::ExecuteCommand(UAVNode* node, uint32_t node_id, uint16_t comma
     out << r;
     node->request(
         node_id, 
-        portid_uavcan_node_ExecuteCommand_1_0, 
+        serviceid_uavcan_node_ExecuteCommand_1_0, 
         dthash_uavcan_node_ExecuteCommand_1_0, 
         CanardPriorityNominal, 
         out, 

@@ -25,7 +25,7 @@
 
 static const     char dtname_uavcan_node_Heartbeat_1_0[] PROGMEM = "uavcan.node.Heartbeat.1.0";
 static const uint64_t dthash_uavcan_node_Heartbeat_1_0 = UAVNode::datatypehash_P(dtname_uavcan_node_Heartbeat_1_0);
-static const uint16_t portid_uavcan_node_Heartbeat_1_0 = 32085;
+static const uint16_t subjectid_uavcan_node_Heartbeat_1_0 = 32085;
 class HeartbeatMessage {
     public:
         // properties
@@ -63,7 +63,7 @@ class HeartbeatApp : public UAVTask  {
             // create a new app task context
             UAVTask * app = new HeartbeatApp();
             // define the port functions for this app
-            node->ports.define_service( portid_uavcan_node_Heartbeat_1_0, dtname_uavcan_node_Heartbeat_1_0, true, nullptr );
+            node->ports.define_subject( subjectid_uavcan_node_Heartbeat_1_0, dtname_uavcan_node_Heartbeat_1_0 );
             // the node will call the app tasks
             node->task_add(app);
         }

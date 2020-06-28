@@ -39,10 +39,19 @@ UAVCAN library for Espressif microcontrollers. (Arduino SDK)
 For more information on the UAVCAN protocol, visit the site:
 https://uavcan.org/
 
+## Overview
+* Define datatypes for the messages you will be exchanging.
+* Create a UAVNode as the 'virtual interface' for your device.
+* Attach network transports to the node so it can communicate with others.
+* Attach functions to the node to subscribe to subjects and respond to requests.
+* Publish subject messages and make remote requests through the node
+
+
 ## Usage
 
-Create a UAVNode object in the usual way. Nodes may be 'anonymous' or be given an id. 
-If the node is going to be associated with TCP or UDP then use the WiFi address to set the id.
+Create a UAVNode object in the usual way. Nodes start 'anonymous' and should eventually be given an id. 
+If the node is going to be associated with TCP or UDP then use the WiFi address to set the id. 
+Or ids can be statically configured, or allocated with the PnP protocol.
 ```C++
 UAVNode uav_node();
 uav_node.serial_node_id = ip_addr & UV_SERIAL_NODEID_MASK;
@@ -51,7 +60,7 @@ uav_node.serial_node_id = ip_addr & UV_SERIAL_NODEID_MASK;
 Transports and Apps can be attached to the node. It is expected that transports using local hardware should be set up first,
 so that when apps are created they have the chance to send out 'startup' messages. 
 
-Because transports come in very different 'classes', there are transport-specific methods on the node object.
+Because transports come in very different 'classes', there are transport-specific management methods on the node object.
 eg: Serial transports form a common class which can share internal buffers.
 
 Starting a protocol connection on a hardware serial port requires wrapping the Arduino port (Serial or Serial1)
@@ -70,8 +79,7 @@ void setup() {
   uav_node.serial_add( new SerialTransport(new HardwareSerialPort(Serial), true, serial_oob) );
 ```
 
-Note the owner flag set to 'true' which means we expect the port to be auto-destroyed when the transport is. 
-(we transfer ownership)
+Note the owner flag set to 'true' which means we expect the port to be auto-destroyed when the transport goes.
 
 One of the simplest serial interfaces is the loopback interface, used for debugging. 
 ```C++
@@ -80,22 +88,19 @@ One of the simplest serial interfaces is the loopback interface, used for debugg
   uav_node.serial_add( loopback );
 ```
 
-Note that the SerialTransport is a generic protocol-level object and it is the SerialPort object which is swapped
-to create new kinds of serial transport.
+The SerialTransport is a generic protocol-level object and it is the SerialPort object which is swapped
+to create new kinds of serial transport. It can even be wrapped in another object that presents a SerialPort API while doing some kind of translation/repacking. The debug port 'wrapper' does this to translate binary code into hex-dump format.
 
-It can even be wrapped in another object that presents a SerialPort API while doing some kind of translation/repacking.
-The debug port 'wrapper' does this to translate binary code into hex-dump format.
-
-To hex-dump on serial port 0, use this instead:
+eg. To hex-dump frames on serial port 0, use this instead:
 ```C++
   // wrap hardware serial port in a debug port
   uav_node.serial_add( new SerialTransport(new DebugSerialPort(new HardwareSerialPort(Serial),true), true, serial_oob) );
 ```
 
-TCP servers work as virtual sets of serial connections. New serial transports are automatically added and removed
-from a node just like above. You can indicate if you want the connection wrapped in a debug port for extra fun.
+TCP servers act as virtual sets of serial connections. New serial transports are automatically added and removed
+from a node just as above. You can indicate if you want the connection wrapped in a debug port for extra fun.
 
-You can also decide whether you provide a _shared UAVNode_ object which will broadcast to all the TCP connections, (as redundant transports) or whether you provide a _factory function_ which will create a _unique UAVNode_ for each TCP/IP connection. There are some large semantic differences between those things, as well as memory differences, and both are useful.
+You can choose decide whether you provide a _shared UAVNode_ object which will redundantly broadcast to all the TCP connections, or whether you provide a _factory function_ which will create a _unique UAVNode_ for each TCP/IP connection. There are some large semantic differences between those things, as well as memory differences, and both are useful.
 
 This example will create two seperate TCP servers from the same node, one normal and the other for hex debug
 ```C++
@@ -105,6 +110,7 @@ This example will create two seperate TCP servers from the same node, one normal
   tcp_debug = new TCPNode(67,&uav_node,true,nullptr);
 }
 ```
+It is entirely appropriate for a device to run multiple UAVNode interface objects for different hardware interfaces. 
 
 The UAVNode and TCPNode objects need to be polled during the Arduino Loop function, preferably at a high rate to handle
 all the network traffic.
@@ -122,9 +128,8 @@ void loop() {
 }
 ```
 
-
 After all that you have an empty node that doesn't do anything, but which is listening on all kinds of networking interfaces.
-We need to install "apps" on the node... groups of functions that publish and listen for frames.
+We need to install "apps" on the node... groups of functions that send and recieve data frames.
 ```C++
   // start UAVCAN apps on the node, some of which will begin emitting messages
   HeartbeatApp::app_v1(uav_node);
@@ -136,23 +141,25 @@ Some app classes (like heartbeat) will add tasks which begin sending regular sub
 
 Most app classes will attach port or subject listeners to the node to recieve wanted messages.
 
-Most app classes provide top-level methods which are named for remote UAVCAN functions they call. 
-They generally pass some level of cooked reply object via a callback.
+Most app classes provide API methods which are named for remote UAVCAN functions they call. 
+They generally call the API and return some kind of cooked reply object via a callback.
 
 ```C++
   // send an order to ourselves
-  NodeinfoApp::ExecuteCommand(uav_node, uav_node->serial_node_id, 66, "Execute order 66!", [](NodeExecuteCommandReply* reply){
-    if(reply==nullptr) {
-      Serial.println("command result {}");
-    } else {
-      Serial.println("command result {");
-      Serial.print(" status: "); Serial.print(reply->status); Serial.println();
-      Serial.println("}");
+  NodeinfoApp::ExecuteCommand(
+    uav_node, node_id,
+    66, "Execute order 66!",
+    [](NodeExecuteCommandReply* reply) {
+      if(reply==nullptr) {
+        Serial.println("command result {}");
+      } else {
+        Serial.println("command result {");
+        Serial.print(" status: "); Serial.print(reply->status); Serial.println();
+        Serial.println("}");
+      }
     }
-  });
+  );
 ```
-
-Apps are merely pre-packaged sets of custom data types and service functions.
 
 We can attach our own service functions to the node, by supplying all the port metadata and a lambda function.
 ```C++
@@ -195,6 +202,8 @@ every heartbeat recieved by the node.
     }
   );
 ```
+
+Apps are merely pre-packaged sets of custom data types and service functions. 
 
 
 

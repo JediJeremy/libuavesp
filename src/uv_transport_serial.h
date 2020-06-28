@@ -110,9 +110,7 @@ class SerialTransport : public UAVSerialTransport {
         SerialTransport(UAVSerialPort& port) : SerialTransport{&port,false,nullptr} {};
         virtual ~SerialTransport();
         // serial transport methods
-        bool start();
-        bool stop();
-        void loop(const unsigned long t, const int dt, UAVNode* node) override;
+        void loop(UAVNode& node, const unsigned long t, const int dt) override;
         void send(SerialTransfer* transfer) override;
         // frame encoding and decoding
         static void encode_frame(SerialTransfer* transfer, UAVNode *node);

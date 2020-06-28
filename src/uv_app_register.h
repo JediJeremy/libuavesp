@@ -110,7 +110,7 @@ class RegisterValue {
 
 static const char     dtname_uavcan_register_Access_1_0[] PROGMEM = "uavcan.register.Access.1.0";
 static const uint64_t dthash_uavcan_register_Access_1_0 = UAVNode::datatypehash_P(dtname_uavcan_register_Access_1_0);
-static const uint16_t portid_uavcan_register_Access_1_0 = 384;
+static const uint16_t serviceid_uavcan_register_Access_1_0 = 384;
 class RegisterAccessRequest {
     public:
         RegisterName name;
@@ -155,7 +155,7 @@ class RegisterAccessReply {
 
 static const char     dtname_uavcan_register_List_1_0[] PROGMEM = "uavcan.register.List.1.0";
 static const uint64_t dthash_uavcan_register_List_1_0 = UAVNode::datatypehash_P(dtname_uavcan_register_List_1_0);
-static const uint16_t portid_uavcan_register_List_1_0 = 385;
+static const uint16_t serviceid_uavcan_register_List_1_0 = 385;
 class RegisterListRequest {
     public:
         uint16_t index;

@@ -213,15 +213,7 @@ SerialTransport::~SerialTransport() {
     if(_owner) delete _port;
 }
 
-bool SerialTransport::start() {
-    return true;
-}
-
-bool SerialTransport::stop() {
-    return true;
-}
-
-void SerialTransport::loop(const unsigned long t, const int dt, UAVNode* node) {
+void SerialTransport::loop(UAVNode& node, const unsigned long t, const int dt) {
     // is there rx data available?
     int remain = _port->readCount();
     while(remain>0) {
@@ -231,7 +223,7 @@ void SerialTransport::loop(const unsigned long t, const int dt, UAVNode* node) {
         remain = min(64,remain);
         _port->read(buf,remain);
         // parse the byte stream into a transfer buffer
-        SerialTransport::parse_buffer(buf, remain, node);
+        SerialTransport::parse_buffer(buf, remain, &node);
         // any left?
         remain = _port->readCount();
     }
@@ -491,11 +483,8 @@ bool SerialTransport::decode_frame(SerialFrame* rx, UAVNode *node) {
         // decode node ids
         uint16_t src_node_id = UAVTransport::decode_uint16(&header[2]);
         uint16_t dst_node_id = UAVTransport::decode_uint16(&header[4]);
-        //uint16_t src_node_id = ((uint16_t)header[3]<<8) || ((uint16_t)header[2]);
-        //uint16_t dst_node_id = ((uint16_t)header[5]<<8) || ((uint16_t)header[4]);
         // decode frame data specifier
         uint16_t dataspec = UAVTransport::decode_uint16(&header[6]);
-        // uint16_t dataspec = ((uint16_t)header[7]<<8) || ((uint16_t)header[6]);
         CanardTransferKind kind;
         uint16_t port_id;
         if( (dataspec & (1<<15)) == 0) {
@@ -511,13 +500,10 @@ bool SerialTransport::decode_frame(SerialFrame* rx, UAVNode *node) {
         }
         // decode datatype
         uint64_t datatype  = UAVTransport::decode_uint64(&header[8]);
-        // uint64_t datatype  = ((uint64_t)*(uint32_t*)&header[12]<<32) | ((uint64_t)*(uint32_t*)&header[8]);
         // decode transfer id
         uint64_t transfer_id  = UAVTransport::decode_uint64(&header[16]);
-        //uint64_t transfer_id = ((uint64_t)*(uint32_t*)&header[20]<<32) | ((uint64_t)*(uint32_t*)&header[16]);
         // decode frame index
         uint32_t frame_index  = UAVTransport::decode_uint32(&header[24]);
-        //uint32_t frame_index = *(uint32_t*)&header[24];
         // we only accept single-frame transfer at this time
         if(frame_index != (1<<31)) {
             Serial.print("badframe ");
@@ -564,7 +550,7 @@ void SerialTransport::send(SerialTransfer* transfer) {
 }
 
 void SerialTransport::dequeue(int index) {
-    // pull that entry
+    // find that entry
     SerialFrame *frame = (SerialFrame *)_queue->values[index];
     if(frame==NULL) return;
     // remove the entry from the queue

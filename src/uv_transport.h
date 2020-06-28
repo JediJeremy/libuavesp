@@ -19,9 +19,9 @@
 // abstract interface for transports
 class UAVTransport {
     public:
-        virtual bool start();
-        virtual bool stop();
-        virtual void loop(const unsigned long t, const int dt, UAVNode* node);
+        virtual bool start(UAVNode& node) { return true; };
+        virtual bool stop(UAVNode& node) { return true; };
+        virtual void loop(UAVNode& node, const unsigned long t, const int dt) {};
         // little-endian integer encoding into transfer buffers
         static void encode_uint16(uint8_t *buffer, uint16_t v);
         static void encode_uint32(uint8_t *buffer, uint32_t v);

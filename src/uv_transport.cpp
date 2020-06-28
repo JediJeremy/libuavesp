@@ -31,6 +31,10 @@ void UAVSerialPort::println(char * string) {
     print("\r\n");
 }
 
+
+//
+
+
 void UAVTransport::encode_uint16(uint8_t *buffer, uint16_t v) {
     buffer[0] = v;
     buffer[1] = v >> 8;

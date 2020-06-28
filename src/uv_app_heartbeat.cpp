@@ -16,7 +16,7 @@ void HeartbeatApp::send(UAVNode *node) {
     uint8_t payload[16];
     UAVOutStream stream(payload,16);
     stream << _message;
-    node->publish(portid_uavcan_node_Heartbeat_1_0, dthash_uavcan_node_Heartbeat_1_0, CanardPriorityNominal, stream.output_buffer, stream.output_index, []() {
+    node->publish(subjectid_uavcan_node_Heartbeat_1_0, dthash_uavcan_node_Heartbeat_1_0, CanardPriorityNominal, stream.output_buffer, stream.output_index, []() {
         // Serial.println("heartbeat sent!");
     });
 }

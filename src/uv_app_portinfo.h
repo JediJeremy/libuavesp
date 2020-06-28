@@ -46,7 +46,7 @@ class PortID {
 
 static const     char dtname_uavcan_port_GetInfo_1_0[] PROGMEM = "uavcan.port.GetInfo.1.0";
 static const uint64_t dthash_uavcan_port_GetInfo_1_0 = UAVNode::datatypehash_P(dtname_uavcan_port_GetInfo_1_0);
-static const uint16_t portid_uavcan_port_GetInfo_1_0 = 432;
+static const uint16_t serviceid_uavcan_port_GetInfo_1_0 = 432;
 class PortGetInfoRequest {
     public:
         PortID port_id;
@@ -85,7 +85,7 @@ class PortGetInfoReply {
 
 static const     char dtname_uavcan_port_GetStatistics_1_0[] PROGMEM = "uavcan.port.GetStatistics.1.0";
 static const uint64_t dthash_uavcan_port_GetStatistics_1_0 = UAVNode::datatypehash_P(dtname_uavcan_port_GetStatistics_1_0);
-static const uint16_t portid_uavcan_port_GetStatistics_1_0 = 432;
+static const uint16_t serviceid_uavcan_port_GetStatistics_1_0 = 432;
 class PortGetStatisticsRequest {
     public:
         PortID port_id;

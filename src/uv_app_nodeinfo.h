@@ -64,7 +64,7 @@ class NodeVersion {
 
 static const     char dtname_uavcan_node_ExecuteCommand_1_0[] PROGMEM = "uavcan.node.ExecuteCommand.1.0";
 static const uint64_t dthash_uavcan_node_ExecuteCommand_1_0 = UAVNode::datatypehash_P(dtname_uavcan_node_ExecuteCommand_1_0);
-static const uint16_t portid_uavcan_node_ExecuteCommand_1_0 = 435;
+static const uint16_t serviceid_uavcan_node_ExecuteCommand_1_0 = 435;
 class NodeExecuteCommandRequest {
     public:
         // properties
@@ -102,7 +102,7 @@ class NodeExecuteCommandReply {
 
 static const     char dtname_uavcan_node_GetInfo_1_0[] PROGMEM = "uavcan.node.GetInfo.1.0";
 static const uint64_t dthash_uavcan_node_GetInfo_1_0 = UAVNode::datatypehash_P(dtname_uavcan_node_GetInfo_1_0);
-static const uint16_t portid_uavcan_node_GetInfo_1_0 = 430;
+static const uint16_t serviceid_uavcan_node_GetInfo_1_0 = 430;
 class NodeGetInfoReply {
     public:
         NodeVersion protocol_version;

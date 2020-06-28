@@ -61,9 +61,8 @@ class UAVPortList {
         // destructor
         ~UAVPortList();
         // port definition interface
-        void define_publish(uint16_t port_id, PGM_P dtf_name);
-        // void define_service(uint16_t port_id, PGM_P dtf_name, bool as_output, std::function<void(UAVNode * node, uint8_t* payload, int payload_size, UAVPortReply reply)> fn);
-        void define_service(uint16_t port_id, PGM_P dtf_name, bool as_output, UAVPortFunction fn);
+        void define_subject(uint16_t subject_id, PGM_P dtf_name);
+        void define_service(uint16_t service_id, PGM_P dtf_name, UAVPortFunction fn);
         // instance list on node
         void debug_ports();
 };
@@ -73,7 +72,7 @@ class UAVNode {
     protected:
         // transport interfaces
         CanardInstance  _canard;
-        std::vector<SerialTransport *> _serial_transports;
+        std::vector<UAVSerialTransport *> _serial_transports;
         std::map<CanardPortID,SerialTransferID> _subject_tid;
         SerialTransferID next_subject_tid(CanardPortID port);
         std::map<std::tuple<CanardPortID,SerialNodeID>,SerialTransferID> _session_tid;
@@ -102,22 +101,22 @@ class UAVNode {
         // event loop
         void loop(const unsigned long t, const int dt);
         // transport management
-        void serial_add(SerialTransport *serial);
-        void serial_remove(SerialTransport *serial);
+        void serial_add(UAVSerialTransport *serial);
+        void serial_remove(UAVSerialTransport *serial);
         void serial_receive(SerialTransfer *transfer);
         void debug_transfer(SerialTransfer *transfer);
         // task management
         void task_add(UAVTask *task);
         void task_remove(UAVTask *task);
         // publish and subscribe methods
-        void publish(uint16_t port, uint64_t datatype, CanardPriority priority, uint8_t * payload, int size, std::function<void()> callback);
-        void publish(uint16_t port, uint64_t datatype, CanardPriority priority, UAVOutStream& out, std::function<void()> callback);
-        void request(uint16_t node_id, uint16_t port, uint64_t datatype, CanardPriority priority, uint8_t * payload, int size, UAVPortRequest callback);
-        void request(uint16_t node_id, uint16_t port, uint64_t datatype, CanardPriority priority, UAVOutStream& out, UAVPortRequest callback);
-        void respond(uint16_t node_id, uint16_t port, uint64_t transfer_id, uint64_t datatype, CanardPriority priority, uint8_t * payload, size_t size);
-        void subscribe(uint16_t remote_node_id, uint16_t port, UAVPortListener fn);
-        void subscribe(uint16_t port, UAVPortListener fn);
-        void subscribe(uint16_t port, uint64_t datatype, UAVPortListener fn);
+        void publish(uint16_t subject_id, uint64_t datatype, CanardPriority priority, uint8_t * payload, int size, std::function<void()> callback);
+        void publish(uint16_t subject_id, uint64_t datatype, CanardPriority priority, UAVOutStream& out, std::function<void()> callback);
+        void request(uint16_t node_id, uint16_t service_id, uint64_t datatype, CanardPriority priority, uint8_t * payload, int size, UAVPortRequest callback);
+        void request(uint16_t node_id, uint16_t service_id, uint64_t datatype, CanardPriority priority, UAVOutStream& out, UAVPortRequest callback);
+        void respond(uint16_t node_id, uint16_t service_id, uint64_t transfer_id, uint64_t datatype, CanardPriority priority, uint8_t * payload, size_t size);
+        void subscribe(uint16_t remote_node_id, uint16_t subject_id, UAVPortListener fn);
+        void subscribe(uint16_t subject_id, UAVPortListener fn);
+        void subscribe(uint16_t subject_id, uint64_t datatype, UAVPortListener fn);
         // datatype hash functions - used to turn arbitrary-length full datatype names into fixed-length integers with group-sortable semantics
         static uint64_t datatypehash(const char *name);
         static uint64_t datatypehash_P(PGM_P name, size_t size);
