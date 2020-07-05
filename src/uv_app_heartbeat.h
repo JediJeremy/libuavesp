@@ -62,8 +62,8 @@ class HeartbeatApp : public UAVTask  {
         static void app_v1(UAVNode *node) {
             // create a new app task context
             UAVTask * app = new HeartbeatApp();
-            // define the port functions for this app
-            node->ports.define_subject( subjectid_uavcan_node_Heartbeat_1_0, dtname_uavcan_node_Heartbeat_1_0 );
+            // we will be sending messages
+            node->define_subject( subjectid_uavcan_node_Heartbeat_1_0, dtname_uavcan_node_Heartbeat_1_0 );
             // the node will call the app tasks
             node->task_add(app);
         }

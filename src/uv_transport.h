@@ -5,24 +5,29 @@
 #include <vector>
 #include <map>
 
-/*
-// the enabled transports
-// extern uint32_t uv_transports;
-#define UV_TRANSPORT_CAN     0x0001
-#define UV_TRANSPORT_SERIAL0 0x0002
-#define UV_TRANSPORT_SERIAL1 0x0004
-#define UV_TRANSPORT_SERIAL2 0x0008
-#define UV_TRANSPORT_UDP     0x0010
-#define UV_TRANSPORT_TCP     0x0020
-*/
+// common transport property types
+using UAVMicrosecond    = uint64_t;
+using UAVPriority       = uint8_t;
+using UAVTransferKind   = uint8_t;
+using UAVPortID         = uint16_t;
+using UAVNodeID         = uint16_t;
+using UAVTransferID     = uint64_t;
+using UAVDatatypeHash   = uint64_t;
+
+// generic transfer structure
+class UAVTransfer;
+class UAVNodePortInfo;
 
 // abstract interface for transports
 class UAVTransport {
     public:
-        virtual bool start(UAVNode& node) { return true; };
-        virtual bool stop(UAVNode& node) { return true; };
-        virtual void loop(UAVNode& node, const unsigned long t, const int dt) {};
-        // little-endian integer encoding into transfer buffers
+        virtual bool start(UAVNode& node) { return true; }
+        virtual void port(UAVNode& node, UAVPortID port_id, UAVNodePortInfo* info) { }
+        virtual bool stop(UAVNode& node) { return true; }
+        virtual void loop(UAVNode& node, const unsigned long t, const int dt) { }
+        virtual void send(UAVTransfer* transfer) { }
+
+        // little-endian integer encoding into transfer buffers - deprecated
         static void encode_uint16(uint8_t *buffer, uint16_t v);
         static void encode_uint32(uint8_t *buffer, uint32_t v);
         static void encode_uint64(uint8_t *buffer, uint64_t v);
@@ -31,44 +36,41 @@ class UAVTransport {
         static uint64_t decode_uint64(uint8_t *buffer);
 };
 
-// generic serial transport structures
-//   used by HardwareSerial and TCPSerial interfaces
-
-//typedef uint16_t SerialNodeID;
-//typedef uint64_t SerialTransferID;
-
-using SerialNodeID = uint16_t;
-using SerialTransferID = uint64_t;
-
 /// A UAVCAN transfer model (either incoming or outgoing).
 /// Per Specification, a transfer is represented on the wire as a non-empty set of transport frames
 /// The library is responsible for serializing transfers into transport frames when transmitting, and reassembling
 /// transfers from an incoming stream of frames during reception.
-class SerialTransfer {
+class UAVTransfer {
     public:
         // transfer header
-        CanardMicrosecond   timestamp_usec;
-        CanardPriority      priority;
-        CanardTransferKind  transfer_kind;
-        CanardPortID        port_id;
-        uint64_t            datatype;
-        SerialNodeID        local_node_id;
-        SerialNodeID        remote_node_id;
-        SerialTransferID    transfer_id;
+        UAVMicrosecond      timestamp_usec;
+        UAVPriority         priority;
+        UAVTransferKind     transfer_kind;
+        UAVPortID           port_id;
+        UAVDatatypeHash     datatype;
+        UAVNodeID           local_node_id;
+        UAVNodeID           remote_node_id;
+        UAVTransferID       transfer_id;
         size_t              payload_size;
         uint8_t*            payload;
-        // encoded frame properties
-        int                 frame_usage;
-        int                 frame_size;
-        uint8_t*            frame_data;
+        // encoded serial frame
+        int                 frame_size = 0;
+        uint8_t*            frame_data = nullptr;
         // all transfers complete callback
         std::function<void()> on_complete;
+        // reference counter
+        int ref_count = 1;
+        void ref(); 
+        void unref(); 
+        // virtual destructor
+        virtual ~UAVTransfer();
 };
+
 
 // abstract interface for serial transports
 class UAVSerialTransport : public UAVTransport {
     public:
-        virtual void send(SerialTransfer* transfer);
+        // void send(UAVTransfer* transfer) override;
 };
 
 // abstract interface for generic serial ports
@@ -84,7 +86,6 @@ class UAVSerialPort {
         void println();
         void println(char * string);
 };
-
 
 // binary transport streams
 class UAVInStream {

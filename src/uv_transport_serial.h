@@ -80,7 +80,7 @@ class DebugSerialPort : public UAVSerialPort {
 };
 
 typedef struct {
-    SerialTransfer* transfer;
+    UAVTransfer*    transfer;
     int             transfer_state;
     int             frame_size;
     int             frame_index;
@@ -89,10 +89,12 @@ typedef struct {
 
 using SerialOOBHandler = void (*) (UAVTransport *transport, SerialFrame* rx, uint8_t* buffer, int count);
 
+/*
 class SerialInterface {
     protected:
     public:
 };
+*/
 
 // concrete serial transport
 class SerialTransport : public UAVSerialTransport {
@@ -111,14 +113,14 @@ class SerialTransport : public UAVSerialTransport {
         virtual ~SerialTransport();
         // serial transport methods
         void loop(UAVNode& node, const unsigned long t, const int dt) override;
-        void send(SerialTransfer* transfer) override;
+        void send(UAVTransfer* transfer) override;
         // frame encoding and decoding
-        static void encode_frame(SerialTransfer* transfer, UAVNode *node);
+        static void encode_frame(UAVTransfer* transfer);
         static bool decode_frame(SerialFrame* rx, UAVNode *node);
         void parse_buffer(uint8_t* parse, int count, UAVNode* node);
         // transmit queue management
         void dequeue(int index);
-        static void transfer_complete(SerialTransfer* transfer);
+        // static void transfer_complete(SerialTransfer* transfer);
 };
 
 

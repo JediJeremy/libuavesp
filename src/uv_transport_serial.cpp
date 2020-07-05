@@ -5,8 +5,7 @@
 #include "numbermap.h"
 #include <map>
 
-// hardware serial port
-
+// hardware serial port wrapper
 HardwareSerialPort::HardwareSerialPort(HardwareSerial& port) {
     _port = &port;
 }
@@ -28,11 +27,12 @@ int HardwareSerialPort::writeCount() {
 }
 
 // loopback serial port
+/*
 uint8_t _buffer[128];
 int _size=128;
 int _head=0;
 int _tail=0;
-
+*/
 LoopbackSerialPort::LoopbackSerialPort() { }
 LoopbackSerialPort::~LoopbackSerialPort() { }
 void LoopbackSerialPort::read(uint8_t *buffer, int count) {
@@ -415,7 +415,7 @@ void SerialTransport::parse_buffer(uint8_t* parse, int count, UAVNode* node) {
     _rx->frame_index = index;
 }
 
-void SerialTransport::encode_frame(SerialTransfer * transfer, UAVNode *node) {
+void SerialTransport::encode_frame(UAVTransfer* transfer) { 
     // how big a transfer buffer will we need?
     int size = UV_SERIAL_MIN_FRAME_SIZE + transfer->payload_size;
     // allocate a buffer for it
@@ -510,28 +510,32 @@ bool SerialTransport::decode_frame(SerialFrame* rx, UAVNode *node) {
             return false;
         }
         // the frame seems to be well formed. wrap it in a transfer header structure
-        SerialTransfer transfer = {
-            .timestamp_usec = 0,
-            .priority = priority,
-            .transfer_kind = kind,
-            .port_id = port_id,
-            .datatype = datatype,
-            .local_node_id = dst_node_id,
-            .remote_node_id = src_node_id,
-            .transfer_id = transfer_id,
-            .payload_size = payload_size,
-            .payload = payload
-        };
-        // pass it to the common node serial transfer reciever, this may cause a lot of activity.
-        node->serial_receive(&transfer);
+        UAVTransfer transfer;
+        transfer.timestamp_usec = 0;
+        transfer.priority = priority;
+        transfer.transfer_kind = kind;
+        transfer.port_id = port_id;
+        transfer.datatype = datatype;
+        transfer.local_node_id = dst_node_id;
+        transfer.remote_node_id = src_node_id;
+        transfer.transfer_id = transfer_id;
+        transfer.payload_size = payload_size;
+        transfer.payload = payload;
+        // pass it to the node transfer reciever, this may cause a lot of activity.
+        node->transfer_receive(&transfer);
         // the transfer is considered complete at this time, the transfer wrapper is destroyed and the buffer is recycled
         return true;
     }
-    // we cannot decode future protocol versions
+    // we cannot decode protocols from the future
     return false;
 }
 
-void SerialTransport::send(SerialTransfer* transfer) {
+void SerialTransport::send(UAVTransfer* transfer) {
+    // has the serial frame been encoded?
+    if(transfer->frame_data==nullptr) {
+        // do it now and share between all serial transports
+        SerialTransport::encode_frame(transfer);
+    }
     // the transfer is ready to go. wrap it in a SerialFrame
     SerialFrame *frame = new SerialFrame();
     frame->transfer = transfer;
@@ -540,7 +544,7 @@ void SerialTransport::send(SerialTransfer* transfer) {
     frame->frame_index = 0;
     frame->frame_buffer = transfer->frame_data;
     // insert it into the transfer queue
-    transfer->frame_usage++;
+    transfer->ref();
     _queue->insert(transfer->priority, frame);
     // if the queue is now full...
     if(_queue->count==_queue->size) {
@@ -556,14 +560,18 @@ void SerialTransport::dequeue(int index) {
     // remove the entry from the queue
     _queue->remove_index(index);
     // destroy the frame state container, but keep the transfer
-    SerialTransfer* transfer = frame->transfer;
+    UAVTransfer* transfer = frame->transfer;
     delete frame;
     // decrement the transfer usage
+    transfer->unref();
+    /*
     transfer->frame_usage--;
     // if the counter has hit zero, the transfer is complete
     if(transfer->frame_usage==0) transfer_complete(transfer);
+    */
 }
 
+/*
 void SerialTransport::transfer_complete(SerialTransfer* transfer) {
     // notify the transfer callback
     if(transfer->on_complete) transfer->on_complete();
@@ -571,3 +579,4 @@ void SerialTransport::transfer_complete(SerialTransfer* transfer) {
     delete transfer->frame_data;
     delete transfer;
 }
+*/

@@ -6,6 +6,31 @@
 #include "numbermap.h"
 #include "crc32c.h"
 
+// UAVTransfer
+// reference counter increment
+void UAVTransfer::ref() { 
+    if(ref_count==0) return;
+    ref_count++; 
+}
+// reference counter decrement
+void UAVTransfer::unref() {
+    if(ref_count==0) return;
+    ref_count--;
+    if(ref_count==0) {
+        if(on_complete!=nullptr) on_complete();
+        delete this;
+    }
+}
+// destructor
+UAVTransfer::~UAVTransfer() {
+    // assume we are the owner of frame_data
+    if(frame_data != nullptr) {
+        delete frame_data;
+    }
+}
+
+// UAVSerialPort
+// stream methods
 void UAVSerialPort::read(uint8_t *buffer, int count) { }
 void UAVSerialPort::write(uint8_t *buffer, int count) { }
 
@@ -17,7 +42,6 @@ void UAVSerialPort::print(char * string) {
         write((uint8_t*)&string[index], c);
         remain -=c;
         index +=c;
-        // Serial.print('('); Serial.print(c); Serial.println(')');
         if(remain>0) delay(100);
     }
 }
@@ -32,8 +56,8 @@ void UAVSerialPort::println(char * string) {
 }
 
 
-//
-
+// UAVTransport
+// old primitive type encode and decode functions... [deprecated: Use in/out streams]
 
 void UAVTransport::encode_uint16(uint8_t *buffer, uint16_t v) {
     buffer[0] = v;
@@ -83,7 +107,8 @@ uint64_t UAVTransport::decode_uint64(uint8_t *buffer) {
 }
 
 
-
+// UAVInStream
+// memory copy methods
 void UAVInStream::input_memcpy(void* payload, int length) {
     if(input_remain<length) return;
     memcpy( payload, &input_buffer[input_index], length);
@@ -92,6 +117,8 @@ void UAVInStream::input_memcpy(void* payload, int length) {
 }
 
 
+// UAVOutStream
+// memory copy methods
 void UAVOutStream::output_memcpy(const void* payload, int length) {
     if(output_remain<length) return;
     memcpy( &output_buffer[output_index], payload, length);
@@ -128,6 +155,7 @@ UAVOutStream& UAVOutStream::P2(PGM_P text, int limit) {
     return *this;
 }
 
+// DatatypeHash test functions
 /*
 void dthash_parsed_debug(const char *name) {
   uint64_t hash = UAVNode::datatypehash(name);

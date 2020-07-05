@@ -6,13 +6,13 @@ void RegisterApp::app_v1(UAVNode *node, RegisterList *registers) {
     // node->ports.define_subject( serviceid_uavcan_register_Access_1_0, dtname_uavcan_register_Access_1_0 );
 
     // register.Access service call
-    node->ports.define_service( 
+    node->define_service( 
         serviceid_uavcan_register_Access_1_0, 
         dtname_uavcan_register_Access_1_0, 
         [&registers](UAVNode& node, UAVInStream& in, UAVPortReply reply) {
         });
     // register.List service call
-    node->ports.define_service(
+    node->define_service(
         serviceid_uavcan_register_List_1_0, 
         dtname_uavcan_register_List_1_0, 
         [&registers](UAVNode& node, UAVInStream& in, UAVPortReply reply) {

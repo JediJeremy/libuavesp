@@ -64,13 +64,13 @@ void NodeinfoApp::service_ExecuteCommand_v1(UAVNode& node, UAVInStream& in, UAVP
 // define the port and functions for this app
 void NodeinfoApp::app_v1(UAVNode *node) {
     // node.GetInfo service call
-    node->ports.define_service( 
+    node->define_service( 
         serviceid_uavcan_node_GetInfo_1_0,
         dtname_uavcan_node_GetInfo_1_0,
         service_GetInfo_v1
     );
     // node.ExecuteCommand service call
-    node->ports.define_service( 
+    node->define_service( 
         serviceid_uavcan_node_ExecuteCommand_1_0, 
         dtname_uavcan_node_ExecuteCommand_1_0, 
         service_ExecuteCommand_v1
@@ -79,7 +79,7 @@ void NodeinfoApp::app_v1(UAVNode *node) {
 
 
 void NodeinfoApp::GetInfo(UAVNode* node, uint32_t node_id, std::function<void(NodeGetInfoReply*)> fn) {
-    // send the next heartbeat message
+    // send an empty request
     node->request(
         node_id, 
         serviceid_uavcan_node_GetInfo_1_0, 
@@ -87,27 +87,26 @@ void NodeinfoApp::GetInfo(UAVNode* node, uint32_t node_id, std::function<void(No
         CanardPriorityNominal, 
         nullptr, 0, 
         [fn](UAVInStream& in) {
-            if(fn!=nullptr) {
-                if(in.input_index) {
-                    NodeGetInfoReply info;
-                    in >> info;
-                    fn(&info);
-                } else {
-                    fn(nullptr);
-                }
-            }
+            if(fn==nullptr) return; // no function, no worries
+            if(&in==nullptr) return fn(nullptr); // null data, likely from timeout
+            // parse our reply object and then callback
+            NodeGetInfoReply info;
+            in >> info;
+            fn(&info);
         }
     );
 }
 
 void NodeinfoApp::ExecuteCommand(UAVNode* node, uint32_t node_id, uint16_t command, char parameter[], std::function<void(NodeExecuteCommandReply*)> fn) {
-    // send the next heartbeat message
-    uint8_t payload[256];
-    UAVOutStream out(payload,256);
+    // create the request message
     NodeExecuteCommandRequest r;
     r.command = command;
     r.parameter.assign(parameter);
+    // stream it to a payload output buffer
+    uint8_t payload[256];
+    UAVOutStream out(payload,256);
     out << r;
+    // make the request
     node->request(
         node_id, 
         serviceid_uavcan_node_ExecuteCommand_1_0, 
@@ -115,15 +114,12 @@ void NodeinfoApp::ExecuteCommand(UAVNode* node, uint32_t node_id, uint16_t comma
         CanardPriorityNominal, 
         out, 
         [fn](UAVInStream& in) {
-            if(fn!=nullptr) {
-                if(in.input_index) {
-                    NodeExecuteCommandReply reply;
-                    in >> reply;
-                    fn(&reply);
-                } else {
-                    fn(nullptr);
-                }
-            }
+            if(fn==nullptr) return; // no function, no worries
+            if(&in==nullptr) return fn(nullptr); // null data, likely from timeout
+            // parse our reply object and then callback
+            NodeExecuteCommandReply reply;
+            in >> reply;
+            fn(&reply);
         }
     );
 }
