@@ -8,10 +8,9 @@
     ----o------o------------o---------o------o---------o-------
 Uncomplicated Application-level Vehicular Communication And Networking. 
 
-# libuavesp
+# libuavesp [![Build Status](https://travis-ci.org/JediJeremy/libuavesp.svg?branch=master)](https://travis-ci.org/JediJeremy/libuavesp)
 UAVCAN library for Espressif microcontrollers. (Arduino SDK)
 
-[![Build Status](https://travis-ci.org/JediJeremy/libuavesp.svg?branch=master)](https://travis-ci.org/JediJeremy/libuavesp)
 
 ### Library Features
 * Full rewrite for ESP8266 (soon ESP32)
@@ -43,7 +42,7 @@ For more information on the UAVCAN protocol, visit the site:
 https://uavcan.org/
 
 For the difference between this and the other UAVCAN projects, imagine Pavel is sitting quietly in an office
-designing UAVCAN/canard so that you can build safety-critical autonomous plane networks that won't ever crash,
+carefully designing UAVCAN/canard so that you can build safety-critical autonomous plane networks that won't ever crash,
 and meanwhile I've duct-taped myself to the outside of the plane with a spanner, soldering iron and compiler toolkit
 shouting "Wooo! Let's get this thing in the air and fix it as we go!" - @JediJeremy
 
@@ -68,9 +67,8 @@ uav_node.local_node_id = ip_addr[3];
 Transports and Apps can be attached to the node. It is expected that transports using local hardware should be set up first,
 so that when apps are created they have the chance to send out startup messages. 
 
-Using a Arduino hardware serial port requires wrapping the port (Serial or Serial1) with a HardwareSerialPort object, 
+Using an Arduino hardware serial port requires wrapping the port (Serial or Serial1) with a HardwareSerialPort object, 
 then starting a SerialTransport around the wrapped port, then adding the transport to the node. 
-You can even recieve "out of band" data - anything that doesn't look like protocol data, like humans typing on terminals - if you provide an 'oob' handler. 
 
 ```C++
 // UAVCAN Node
@@ -81,17 +79,20 @@ void setup() {
   uav_node.add( new SerialTransport(new HardwareSerialPort(Serial), true, nullptr) );
 ```
 
-Note the owner flag set to 'true' which means the port will be auto-destroyed with the transport.
+Note the owner flag set to 'true' which means the wrapper port will be auto-destroyed with the transport.
 
-One of the simplest serial interfaces is the loopback interface, mostly used for debugging. 
+You can even recieve "out of band" data - anything that doesn't look like protocol data, such as humans typing on terminals - 
+if you provide an 'oob handler', which we have not done here. 
+
+
+One of the simplest serial interfaces is the loopback interface, used mostly for debugging. 
 ```C++
   // add a loopback serial transport for testing
   uav_node.add( new SerialTransport( new LoopbackSerialPort(), true, nullptr) );
 ```
 
-The SerialTransport is a higher protocol level object and it is the SerialPort object which is upgraded
-to create new kinds of serial transport. It can even be wrapped in another SerialPort API object for
-translation/recoding. The debug port class does this to translate raw binary data into pretty hex-dump format.
+The SerialTransport is a high level protocol object, it is the SerialPort object which is extended
+to create new kinds of serial connections or transcoders. 
 
 eg. To hex-dump frames on serial port 0, use this instead:
 ```C++
