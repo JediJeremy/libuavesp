@@ -8,10 +8,10 @@
     ----o------o------------o---------o------o---------o-------
 Uncomplicated Application-level Vehicular Communication And Networking. 
 
-[![Build Status](https://api.travis-ci.org/JediJeremy/libuavesp.svg)](https://travis-ci.org/github/JediJeremy/libuavesp)
-
 # libuavesp
 UAVCAN library for Espressif microcontrollers. (Arduino SDK)
+
+[![Build Status](https://api.travis-ci.org/JediJeremy/libuavesp.svg?branch=master)](https://travis-ci.org/github/JediJeremy/libuavesp)
 
 ### Library Features
 * Full rewrite for ESP8266 (soon ESP32)
@@ -45,9 +45,7 @@ https://uavcan.org/
 For the difference between this and the other UAVCAN projects, imagine Pavel is sitting quietly in an office
 designing UAVCAN/canard so that you can build safety-critical autonomous plane networks that won't ever crash,
 and meanwhile I've duct-taped myself to the outside of the plane with a spanner, soldering iron and compiler toolkit
-shouting "Wooo! Let's get this thing in the air and fix it as we go!" 
-
-- @JediJeremy
+shouting "Wooo! Let's get this thing in the air and fix it as we go!" - @JediJeremy
 
 ## Overview
 * Define datatypes for the messages you will be exchanging.
