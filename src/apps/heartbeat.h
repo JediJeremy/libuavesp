@@ -1,9 +1,9 @@
 #ifndef LIBUAVESP_APP_HEARTBEAT_H_INCLUDED
 #define LIBUAVESP_APP_HEARTBEAT_H_INCLUDED
 
-#include "common.h"
-#include "node.h"
-#include "primitive.h"
+#include "../common.h"
+#include "../node.h"
+#include "../primitive.h"
 
 #define HEARTBEAT_PORT_ID           32085
 

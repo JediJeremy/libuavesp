@@ -1,9 +1,10 @@
 #ifndef LIBUAVESP_TRANSPORT_SERIAL_H_INCLUDED
 #define LIBUAVESP_TRANSPORT_SERIAL_H_INCLUDED
 
-#include "common.h"
-#include "node.h"
-#include "numbermap.h"
+#include "../common.h"
+#include "../node.h"
+#include "../transport.h"
+#include "../numbermap.h"
 
 #define UV_SERIAL_FRAME_VERSION_0   0x00
 #define UV_SERIAL_FRAME_DELIMITER   0x9E

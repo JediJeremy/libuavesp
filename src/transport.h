@@ -18,6 +18,9 @@ using UAVDatatypeHash   = uint64_t;
 class UAVTransfer;
 class UAVNodePortInfo;
 
+// forward declaration of used classes
+class UAVNode;
+
 // abstract interface for transports
 class UAVTransport {
     public:

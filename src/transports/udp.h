@@ -1,12 +1,13 @@
 #ifndef LIBUAVESP_TRANSPORT_UDP_H_INCLUDED
 #define LIBUAVESP_TRANSPORT_UDP_H_INCLUDED
 
-#include "common.h"
-#include "transport.h"
-#include "serial.h"
-#include "numbermap.h"
-#include <ESP8266WiFi.h>
+#include "../common.h"
+#include "../node.h"
+#include "../transport.h"
+#include "../numbermap.h"
+// #include "serial.h"
 
+#include <ESP8266WiFi.h>
 #include "lwip/opt.h"
 #include "lwip/udp.h"
 #include "lwip/inet.h"

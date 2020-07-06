@@ -1,7 +1,5 @@
-#include "transport.h"
+#include "../crc32c.h"
 #include "serial.h"
-//#include "canard.h"
-#include "crc32c.h"
 #include <map>
 
 // hardware serial port wrapper

@@ -1,9 +1,9 @@
 #ifndef LIBUAVESP_TRANSPORT_CANARD_H_INCLUDED
 #define LIBUAVESP_TRANSPORT_CANARD_H_INCLUDED
 
-#include "common.h"
-#include "node.h"
-#include "transport.h"
+#include "../common.h"
+#include "../node.h"
+#include "../transport.h"
 
 // #include <canard.h>
 #ifdef CANARD_H_INCLUDED

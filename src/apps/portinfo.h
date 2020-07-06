@@ -1,9 +1,9 @@
 #ifndef LIBUAVESP_APP_PORTINFO_H_INCLUDED
 #define LIBUAVESP_APP_PORTINFO_H_INCLUDED
 
-#include "common.h"
-#include "node.h"
-#include "primitive.h"
+#include "../common.h"
+#include "../node.h"
+#include "../primitive.h"
 #include "nodeinfo.h"
 
 static const     char dtname_uavcan_port_ID_1_0[] PROGMEM = "uavcan.port.ID.1.0";

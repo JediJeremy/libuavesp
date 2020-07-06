@@ -1,9 +1,9 @@
 #ifndef LIBUAVESP_APP_NODEINFO_H_INCLUDED
 #define LIBUAVESP_APP_NODEINFO_H_INCLUDED
 
-#include "common.h"
-#include "node.h"
-#include "primitive.h"
+#include "../common.h"
+#include "../node.h"
+#include "../primitive.h"
 
 static const     char dtname_uavcan_node_ID_1_0[] PROGMEM = "uavcan.node.ID.1.0";
 static const uint64_t dthash_uavcan_node_ID_1_0 = UAVNode::datatypehash_P(dtname_uavcan_node_ID_1_0);

@@ -1,10 +1,11 @@
 #ifndef LIBUAVESP_TRANSPORT_TCP_H_INCLUDED
 #define LIBUAVESP_TRANSPORT_TCP_H_INCLUDED
 
-#include "common.h"
-#include "transport.h"
+#include "../common.h"
+#include "../node.h"
+#include "../transport.h"
+#include "../numbermap.h"
 #include "serial.h"
-#include "numbermap.h"
 #include <ESP8266WiFi.h>
 #include <vector>
 
