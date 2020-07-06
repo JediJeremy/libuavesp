@@ -159,6 +159,7 @@ bool NumberMap::for_each(int key, NumberMapCall fn) {
         if(fn!=NULL) fn(values[a]);
         a++;
     }
+    return true;
 }
 
 bool NumberMap::call_each(int key, void* param) {
@@ -172,6 +173,7 @@ bool NumberMap::call_each(int key, void* param) {
         if(fn!=NULL) fn(param);
         a++;
     }
+    return true;
 }
 
 /*
