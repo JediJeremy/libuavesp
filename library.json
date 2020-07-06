@@ -1,0 +1,23 @@
+{
+    "name": "libuavesp",
+    "keywords": "uavcan, automation, sensor, networking",
+    "description": "UAVCAN library for Espressif microcontrollers",
+    "repository":
+    {
+        "type": "git",
+        "url": "https://github.com/JediJeremy/libuavesp.git"
+    },
+    "authors": 
+    [
+        {
+        "name": "JediJeremy",
+        "email": "unorthodox.engineers@gmail.com",
+        "url": "https://twitter.com/JediJeremy",
+        "maintainer": true
+        }
+    ],
+    "dependencies":[],
+    "version": "0.0.1",
+    "frameworks": "arduino",
+    "platforms": "*"
+}

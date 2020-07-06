@@ -1,19 +1,39 @@
 # Syntax Coloring Map
 
 # Datatypes (KEYWORD1)
-UAVNode         KEYWORD1
-UAVSerialPort   KEYWORD1
-UAVTransport    KEYWORD1
+UAVNode             KEYWORD1
+UAVSerialPort       KEYWORD1
+UAVTransport        KEYWORD1
 
-UAVInStream     KEYWORD1
-UAVOutStream    KEYWORD1
+UAVMicrosecond      KEYWORD1
+UAVPriority         KEYWORD1
+UAVTransferKind     KEYWORD1
+UAVNodeID           KEYWORD1
+UAVPortID           KEYWORD1
+UAVTransferID       KEYWORD1
+UAVDatatypeHash     KEYWORD1
 
+UAVInStream         KEYWORD1
+UAVOutStream        KEYWORD1
 
 # Methods and Functions (KEYWORD2)
-publish         KEYWORD2
-subscribe       KEYWORD2
-request         KEYWORD2
+add                 KEYWORD2
+remove              KEYWORD2
+publish             KEYWORD2
+subscribe           KEYWORD2
+request             KEYWORD2
 
 # Instances (KEYWORD2)
 
 # Constants (LITERAL1)
+PriorityExceptional LITERAL1
+PriorityImmediate   LITERAL1
+PriorityFast        LITERAL1
+PriorityHigh        LITERAL1
+PriorityNominal     LITERAL1 
+PriorityLow         LITERAL1
+PrioritySlow        LITERAL1
+PriorityOptional    LITERAL1
+KindMessage         LITERAL1
+KindResponse        LITERAL1
+KindRequest         LITERAL1

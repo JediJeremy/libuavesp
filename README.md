@@ -14,6 +14,7 @@ UAVCAN library for Espressif microcontrollers. (Arduino SDK)
 ### Library Features
 * Full rewrite for ESP8266 (soon ESP32)
 * Transports over 
+  * WiFi UDP Broadcast
   * Serial Hardware UART
   * Serial TCP/IP tunnel
   * Serial Loopback
@@ -223,4 +224,4 @@ every heartbeat recieved by the node.
 
 
 ## Examples
-* Order66.ino Tests the Node.GetInfo and Node.ExecuteCommand and will occasionally command the execution of order 66.
+* Order66.ino Tests Node.GetInfo and Node.ExecuteCommand and will occasionally command the execution of order 66.
