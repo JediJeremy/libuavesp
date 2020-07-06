@@ -58,21 +58,20 @@ void uavcan_setup() {
   uint32_t addr = 0;
   for(int i=0; i<4; i++) addr = (addr<<8) | ( ip[i] & ~snet[i] );
   // set the node id to the last part of the subnet ip address
-  uav_node->serial_node_id = addr & UV_SERIAL_NODEID_MASK;
+  uav_node->local_node_id = addr & UV_SERIAL_NODEID_MASK;
   
   // add a loopback serial transport for testing
-  uav_node->serial_add( new SerialTransport( new LoopbackSerialPort(), true, serial_oob ) );
+  uav_node->add( new SerialTransport( new LoopbackSerialPort(), true, serial_oob ) );
 
   // enable the serial transport on port 0 (or debug)
-  //uav_node->serial_add( new SerialTransport(serial_port_0) );
-  //uav_node->serial_add( new SerialTransport(debug_port_0) );
+  //uav_node->add( new SerialTransport(serial_port_0) );
+  //uav_node->add( new SerialTransport(debug_port_0) );
 
   // TCP servers are complicated because each connection could route to a unique node.
   // but for now all TCP nodes connect to the single central uav_node.
   
   // start a tcp server over the node on port 66
   tcp_node = new TCPNode(66,uav_node,false,tcp_oob);
-
   // start a debug tcp server over the node on port 67
   tcp_debug = new TCPNode(67,uav_node,true,tcp_oob);
 
@@ -80,9 +79,6 @@ void uavcan_setup() {
   HeartbeatApp::app_v1(uav_node);
   NodeinfoApp::app_v1(uav_node);
   RegisterApp::app_v1(uav_node, system_registers);
-
-  // debug our port list
-  uav_node->ports.debug_ports();
 
 }
 
@@ -117,14 +113,14 @@ void setup(){
   // start the network node
   uavcan_setup();
   Serial.print("UAVCAN Node ");
-  Serial.print(uav_node->serial_node_id);
+  Serial.print(uav_node->local_node_id);
   Serial.println();
 
   // attach a listener for heartbeat messages
   uav_node->subscribe(
-    portid_uavcan_node_Heartbeat_1_0, 
-    dthash_uavcan_node_Heartbeat_1_0, 
-    [](SerialNodeID node_id, UAVInStream& in) {
+    subjectid_uavcan_node_Heartbeat_1_0, 
+    dtname_uavcan_node_Heartbeat_1_0, 
+    [](UAVNodeID node_id, UAVInStream& in) {
       HeartbeatMessage m;
       in >> m;
       Serial.println("heartbeat detected {");
@@ -196,13 +192,13 @@ void loop() {
       // do our regular big task
       switch(random(4)) {
         case 0:
-          NodeinfoApp::ExecuteCommand(uav_node, uav_node->serial_node_id, 66, "Execute order 66!", command_fn);
+          NodeinfoApp::ExecuteCommand(uav_node, uav_node->local_node_id, 66, "Execute order 66!", command_fn);
           break;
         case 1:
           NodeinfoApp::GetInfo(uav_node, 159, info_fn); // to windows machine, if available
           break;
         default:
-          NodeinfoApp::GetInfo(uav_node, uav_node->serial_node_id, info_fn); // to self
+          NodeinfoApp::GetInfo(uav_node, uav_node->local_node_id, info_fn); // to self
           break;
       }
     }
