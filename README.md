@@ -11,7 +11,7 @@ Uncomplicated Application-level Vehicular Communication And Networking.
 # libuavesp
 UAVCAN library for Espressif microcontrollers. (Arduino SDK)
 
-[![Build Status](https://api.travis-ci.org/JediJeremy/libuavesp.svg?branch=master)](https://travis-ci.org/github/JediJeremy/libuavesp)
+[![Build Status](https://travis-ci.org/JediJeremy/libuavesp.svg?branch=master)](https://travis-ci.org/JediJeremy/libuavesp)
 
 ### Library Features
 * Full rewrite for ESP8266 (soon ESP32)
