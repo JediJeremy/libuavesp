@@ -8,6 +8,8 @@
     ----o------o------------o---------o------o---------o-------
 Uncomplicated Application-level Vehicular Communication And Networking. 
 
+[![Build Status](https://api.travis-ci.org/JediJeremy/libuavesp.svg)](https://travis-ci.org/github/JediJeremy/libuavesp)
+
 # libuavesp
 UAVCAN library for Espressif microcontrollers. (Arduino SDK)
 
