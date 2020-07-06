@@ -11,14 +11,16 @@ before_install:
   - sudo ln -s /usr/local/share/arduino/arduino /usr/local/bin/arduino
 install:
   - ln -s $PWD /usr/local/share/arduino/libraries/libuavesp
-  #- arduino --pref "boardsmanager.additional.urls=http://arduino.esp8266.com/stable/package_esp8266com_index.json" --save-prefs
+  - arduino --pref "boardsmanager.additional.urls=http://arduino.esp8266.com/stable/package_esp8266com_index.json" --save-prefs
   - arduino --install-boards esp8266:esp8266
-  - arduino --install-boards esp32:esp32
+  #- arduino --install-boards esp32:esp32
   - arduino --pref "compiler.warning_level=all" --save-prefs
   # - arduino --install-library "DHT sensor library:1.3.0,Adafruit Unified Sensor:1.0.2"
 #before_script:
   # Replace placeholders with actual frequency plan (on Mac OS folow -i by '')
   #- find $PWD/examples -type f -name "*.ino" -exec sed -i 's/REPLACE_ME/TTN_FP_EU868/g' {} +
 script:
-  - test/verify esp8266:esp8266:generic examples/Order66/Order66.ino
+  #- test/verify esp8266:esp8266:generic examples/Order66/Order66.ino
+  arduino --verify --board esp8266:esp8266:generic $PWD/examples/Order66/Order66.ino
   #- test/verify esp32:esp32:esp32 examples/Order66/Order66.ino
+  #arduino --verify --board esp32:esp32:esp32 $PWD/examples/Order66/Order66.ino
