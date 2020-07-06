@@ -1,8 +1,7 @@
-#include <Arduino.h>
-#include <canard.h>
 #ifndef LIBUAVESP_H_INCLUDED
 #define LIBUAVESP_H_INCLUDED
 
+#include <Arduino.h>
 #include "node.h"
 #include "transport.h"
 #include "transports/serial.h"

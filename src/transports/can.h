@@ -4,11 +4,9 @@
 #include "common.h"
 #include "node.h"
 #include "transport.h"
-#include <canard.h>
 
-// global canard context
-// extern CanardInstance uv_canard;
-
+// #include <canard.h>
+#ifdef CANARD_H_INCLUDED
 
 /*
   CanardTransport abstract interface
@@ -31,5 +29,5 @@ class CanardTransport : public UAVTransport {
         void loop(UAVNode& node, const unsigned long t, const int dt) { };
         void send(UAVTransfer* transfer) override;
 };
-
+#endif
 #endif

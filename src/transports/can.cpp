@@ -1,5 +1,6 @@
 #include "can.h"
 
+#ifdef CANARD_H_INCLUDED
 
 // memory allocator for canard
 void* canard_allocate(CanardInstance* ins, size_t amount) { return malloc(amount); }
@@ -47,3 +48,4 @@ void CanardTransport::send(UAVTransfer* transfer) {
     canardTxPush(&_canard, ct);
 }
 
+#endif
