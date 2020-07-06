@@ -1,8 +1,7 @@
 language: generic
 env:
   #- ARDUINO_VERSION=1.6.13
-  #- ARDUINO_VERSION=1.8.13
-  - ARDUINO_VERSION=1.8.5
+  - ARDUINO_VERSION=1.8.13
 before_install:
   - "/sbin/start-stop-daemon --start --quiet --pidfile /tmp/custom_xvfb_1.pid --make-pidfile --background --exec /usr/bin/Xvfb -- :1 -ac -screen 0 1280x1024x16"
   - sleep 3
@@ -23,3 +22,5 @@ script:
   - arduino --verify --board esp8266:esp8266:generic:xtal=80,eesz=4M1M,FlashMode=qio,FlashFreq=80,dbg=Serial,lvl=CORE $PWD/examples/Order66/Order66.ino
   #- arduino --verify --board esp32:esp32:lolin32 $PWD/examples/Order66/Order66.ino
   #- arduino --verify --board esp32:esp32:esp32wrover $PWD/examples/Order66/Order66.ino
+notifications:
+  email: false
