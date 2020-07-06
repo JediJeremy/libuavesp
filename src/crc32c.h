@@ -1,5 +1,5 @@
-#ifndef UV_CRC32_H_INCLUDED
-#define UV_CRC32_H_INCLUDED
+#ifndef LIBUAVESP_CRC32_H_INCLUDED
+#define LIBUAVESP_CRC32_H_INCLUDED
 
 #include <Arduino.h>
 

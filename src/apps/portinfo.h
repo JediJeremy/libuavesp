@@ -1,10 +1,10 @@
-#ifndef UV_APP_PORTINFO_H_INCLUDED
-#define UV_APP_PORTINFO_H_INCLUDED
+#ifndef LIBUAVESP_APP_PORTINFO_H_INCLUDED
+#define LIBUAVESP_APP_PORTINFO_H_INCLUDED
 
-#include "uv_common.h"
-#include "uv_node.h"
-#include "uv_primitive.h"
-#include "uv_app_nodeinfo.h"
+#include "common.h"
+#include "node.h"
+#include "primitive.h"
+#include "nodeinfo.h"
 
 static const     char dtname_uavcan_port_ID_1_0[] PROGMEM = "uavcan.port.ID.1.0";
 static const uint64_t dthash_uavcan_port_ID_1_0 = UAVNode::datatypehash_P(dtname_uavcan_port_ID_1_0);

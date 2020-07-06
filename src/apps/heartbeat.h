@@ -1,9 +1,9 @@
-#ifndef UV_APP_HEARTBEAT_H_INCLUDED
-#define UV_APP_HEARTBEAT_H_INCLUDED
+#ifndef LIBUAVESP_APP_HEARTBEAT_H_INCLUDED
+#define LIBUAVESP_APP_HEARTBEAT_H_INCLUDED
 
-#include "uv_common.h"
-#include "uv_node.h"
-#include "uv_primitive.h"
+#include "common.h"
+#include "node.h"
+#include "primitive.h"
 
 #define HEARTBEAT_PORT_ID           32085
 
@@ -20,7 +20,7 @@
 
 #define HEARTBEAT_STATUS_NONE           0
 
-#define HEARTBEAT_DELAY             10000
+#define HEARTBEAT_DELAY              1000
 
 
 static const     char dtname_uavcan_node_Heartbeat_1_0[] PROGMEM = "uavcan.node.Heartbeat.1.0";
@@ -60,20 +60,18 @@ class HeartbeatApp : public UAVTask  {
     public:
         // application setup
         static void app_v1(UAVNode *node) {
-            // create a new app task context
-            UAVTask * app = new HeartbeatApp();
             // we will be sending messages
             node->define_subject( subjectid_uavcan_node_Heartbeat_1_0, dtname_uavcan_node_Heartbeat_1_0 );
-            // the node will call the app tasks
-            node->task_add(app);
+            // create a new app task
+            node->add( new HeartbeatApp() );
         }
         // 
         void set_status(uint8_t health, uint8_t mode, uint32_t vendor);
-        void send(UAVNode *node);
+        void send(UAVNode& node);
         // task interface
-        void start(UAVNode *node) override;
-        void loop(unsigned long t,int dt, UAVNode *node) override;
-        void stop(UAVNode *node) override;
+        void start(UAVNode& node) override;
+        void loop(UAVNode& node, unsigned long t, int dt) override;
+        void stop(UAVNode& node) override;
 };
 
 #endif

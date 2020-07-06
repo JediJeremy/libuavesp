@@ -1,4 +1,4 @@
-#include "uv_app_nodeinfo.h"
+#include "nodeinfo.h"
 
 void NodeinfoApp::service_GetInfo_v1(UAVNode& node, UAVInStream& in, UAVPortReply reply) {
     // prepare default reply
@@ -84,7 +84,7 @@ void NodeinfoApp::GetInfo(UAVNode* node, uint32_t node_id, std::function<void(No
         node_id, 
         serviceid_uavcan_node_GetInfo_1_0, 
         dthash_uavcan_node_GetInfo_1_0, 
-        CanardPriorityNominal, 
+        UAVTransfer::PriorityNominal, 
         nullptr, 0, 
         [fn](UAVInStream& in) {
             if(fn==nullptr) return; // no function, no worries
@@ -111,7 +111,7 @@ void NodeinfoApp::ExecuteCommand(UAVNode* node, uint32_t node_id, uint16_t comma
         node_id, 
         serviceid_uavcan_node_ExecuteCommand_1_0, 
         dthash_uavcan_node_ExecuteCommand_1_0, 
-        CanardPriorityNominal, 
+        UAVTransfer::PriorityNominal, 
         out, 
         [fn](UAVInStream& in) {
             if(fn==nullptr) return; // no function, no worries

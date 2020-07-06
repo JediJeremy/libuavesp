@@ -1,8 +1,8 @@
-#ifndef UV_APP_PRIMITIVE_H_INCLUDED
-#define UV_APP_PRIMITIVE_H_INCLUDED
+#ifndef LIBUAVESP_PRIMITIVE_H_INCLUDED
+#define LIBUAVESP_PRIMITIVE_H_INCLUDED
 
-#include "uv_common.h"
-#include "uv_node.h"
+#include "common.h"
+#include "node.h"
 #include <string>
 
 

@@ -1,7 +1,7 @@
 #ifndef UV_TRANSPORT_H_INCLUDED
 #define UV_TRANSPORT_H_INCLUDED
 
-#include "uv_common.h"
+#include "common.h"
 #include <vector>
 #include <map>
 
@@ -64,6 +64,21 @@ class UAVTransfer {
         void unref(); 
         // virtual destructor
         virtual ~UAVTransfer();
+
+        // constants & enumerations
+        
+        static const UAVPriority PriorityExceptional = 0;
+        static const UAVPriority PriorityImmediate   = 1;
+        static const UAVPriority PriorityFast        = 2;
+        static const UAVPriority PriorityHigh        = 3;
+        static const UAVPriority PriorityNominal     = 4;  ///< Nominal priority level should be the default.
+        static const UAVPriority PriorityLow         = 5;
+        static const UAVPriority PrioritySlow        = 6;
+        static const UAVPriority PriorityOptional    = 7;
+
+        static const UAVTransferKind KindMessage  = 0;  ///< Multicast, from publisher to all subscribers.
+        static const UAVTransferKind KindResponse = 1;  ///< Point-to-point, from server to client.
+        static const UAVTransferKind KindRequest  = 2;  ///< Point-to-point, from client to server.
 };
 
 

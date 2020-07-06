@@ -1,5 +1,58 @@
-#include "uv_transport_udp.h"
+#include "udp.h"
 
+// turn the UAVCAN port id into a UDP port number
+uint16_t udp_port_number(UAVPortID port_id, UAVTransferKind kind) {
+    uint16_t udp_port = 16384; // 1<<14
+    switch(kind) {
+        case UAVTransfer::KindMessage:  udp_port += (port_id & 0x7fff); break;
+        case UAVTransfer::KindRequest:  udp_port -= (port_id & 0x0fff)*2 +2; break;
+        case UAVTransfer::KindResponse: udp_port -= (port_id & 0x0fff)*2 +1; break;
+    }
+    return udp_port;
+}
+
+// turn a UDP port number back into a UAVCAN port id 
+UAVPortID udp_port_id(uint16_t udp_port) {
+    if(udp_port >= 16384) {
+        return udp_port - 16384;
+    }
+    if(udp_port > 8192) {
+        return 0x8000 | ((16384 - udp_port - 1) >> 1);
+    }
+    return 0;
+}
+
+/** Function prototype for udp pcb receive callback functions
+ * addr and port are in same byte order as in the pcb
+ * The callback is responsible for freeing the pbuf
+ * if it's not used any more.
+ *
+ * ATTENTION: Be aware that 'addr' might point into the pbuf 'p' so freeing this pbuf
+ *            can make 'addr' invalid, too.
+ *
+ * @param arg user supplied argument (udp_pcb.recv_arg)
+ * @param pcb the udp_pcb which received data
+ * @param p the packet buffer that was received
+ * @param addr the remote IP address from which the packet was received
+ * @param port the remote port from which the packet was received
+ */
+void PortUDPTransport::udp_recv_fn(void *arg, struct udp_pcb *pcb, struct pbuf *p, const ip_addr_t *addr, u16_t port) {
+    // use the arg as a UAVNode reference
+    if(arg==nullptr) return;
+    UAVNode* node = (UAVNode *)arg;
+    // turn ip addresses into node ids
+    uint32_t sub_mask = WiFi.subnetMask().v4();
+    uint32_t src_ip = ~(sub_mask) & addr->addr;
+    UAVNodeID src_id = (src_ip>>8)&0xff00 | (src_ip>>24)&0x00ff;
+    uint32_t dst_ip = ~(sub_mask) & pcb->local_ip.addr;
+    UAVNodeID dst_id = (dst_ip>>8)&0xff00 | (dst_ip>>24)&0x00ff;
+    // wrap the pbuf data in an input stream
+    UAVInStream in((uint8_t*)p->payload, p->len);
+    // decode the frame stream, send to the node if valid
+    UDPTransport::decode_frame(*node, src_id, dst_id, pcb->local_port, in);
+    // our job to release the buffer
+    pbuf_free(p);
+}
 
 // serial transport methods
 bool UDPTransport::start(UAVNode& node) {
@@ -14,30 +67,6 @@ bool UDPTransport::start(UAVNode& node) {
     // fix to allow reception of broadcast packets - never tested
     // wifi_set_sleep_type(NONE_SLEEP_T); 
     return true;
-}
-
-
-// we need to turn the UAVCAN port id into a UDP port number
-uint16_t udp_port_number(UAVPortID port_id, UAVTransferKind kind) {
-    uint16_t udp_port = 16384; // 1<<14
-    switch(kind) {
-        case CanardTransferKindMessage:  udp_port += (port_id & 0x7fff); break;
-        case CanardTransferKindRequest:  udp_port -= (port_id & 0x0fff)*2 +2; break;
-        case CanardTransferKindResponse: udp_port -= (port_id & 0x0fff)*2 +1; break;
-    }
-    return udp_port;
-}
-
-
-// we need to turn a UDP port number back into the UAVCAN port id 
-UAVPortID udp_port_id(uint16_t udp_port) {
-    if(udp_port >= 16384) {
-        return udp_port - 16384;
-    }
-    if(udp_port > 8192) {
-        return 0x8000 | ((16384 - udp_port - 1) >> 1);
-    }
-    return 0;
 }
 
 bool UDPTransport::stop(UAVNode& node) {
@@ -61,23 +90,9 @@ ip_addr_t UDPTransport::node_addr(UAVNodeID node_id) {
 
 void UDPTransport::send(UAVTransfer* transfer) {
     // turn the destination node id into a udp/ip address
-    /* UAVNodeID node_id = transfer->remote_node_id;
-    ip_addr_t  udp_addr;
-    if(node_id==0xFFFF) {
-        // use the broadcast address
-        udp_addr.addr = broadcast_ip.v4();
-    } else {
-        // start from the subnet address and mix in the node id.
-        udp_addr.addr = subnet_ip.v4() | ( (node_id & 0xFF) << 24) | ( (node_id & 0xFF00) << 8);
-    } */
     ip_addr_t udp_addr = node_addr(transfer->remote_node_id);
     // turn the UAVCAN port id into a UDP port number
     uint16_t udp_port = udp_port_number(transfer->port_id, transfer->transfer_kind);
-    /*
-    Serial.print("[<<"); if(transfer->remote_node_id!=0xFFFF) Serial.print(transfer->remote_node_id);
-    Serial.print(":"); Serial.print(udp_port);
-    Serial.print(">>]");
-    */
     // build a single-frame datagram from the payload
     int size = 24 + transfer->payload_size;
     // allocate a lwip buffer for the datagram
@@ -107,6 +122,7 @@ void UDPTransport::send(UAVTransfer* transfer) {
     pbuf_free(tx_dgram);
 }
 
+
 void UDPTransport::decode_frame(UAVNode& node, UAVNodeID src_node_id, UAVNodeID dst_node_id, uint16_t udp_port, UAVInStream& in) {
     uint8_t version;
     uint8_t priority;
@@ -130,11 +146,11 @@ void UDPTransport::decode_frame(UAVNode& node, UAVNodeID src_node_id, UAVNodeID 
         // decode the udp port range back to port specifier
         if(udp_port >= 16384) {
             t.port_id = udp_port - 16384;
-            t.transfer_kind = CanardTransferKindMessage;
+            t.transfer_kind = UAVTransfer::KindMessage;
             t.local_node_id = 0xffff; // it must have been broadcast
         } else if(udp_port > 8192) {
              t.port_id = ((16384 - udp_port - 1) >> 1) | 0x8000;
-             t.transfer_kind = (udp_port&1)==1 ? CanardTransferKindResponse : CanardTransferKindRequest;
+             t.transfer_kind = (udp_port&1)==1 ? UAVTransfer::KindResponse : UAVTransfer::KindRequest;
         }
         // give the decoded transfer frame to the node
         node.transfer_receive(&t);
@@ -147,27 +163,11 @@ void UDPTransport::decode_frame(UAVNode& node, UAVNodeID src_node_id, UAVNodeID 
 bool PortUDPTransport::start(UAVNode& node) {
     // common udp startup
     if(UDPTransport::start(node)==false) return false;
-    /*
-    // add all the active port listeners
+    // setup any existing ports
     for(auto v : node.ports.list) {
         UAVNodePortInfo * info = v.second;
-        uint16_t udp_port;
-        if((info->port_id & 0x8000)!=0) {
-            Serial.print("Service "); Serial.print(info->port_id & 0x7FFF); 
-            udp_port = udp_port_number(info->port_id & 0x7FFF, CanardTransferKindRequest);
-        } else {
-            Serial.print("Subject "); Serial.print(info->port_id); 
-            udp_port = udp_port_number(info->port_id, CanardTransferKindMessage);
-        }
-        Serial.print(" { ");
-        Serial.print(info->is_input ? "in " : "");
-        Serial.print(info->is_output ? "out " : "");
-        // Serial.print(PSTR((const char [])info->dtf_name));
-        Serial.print(" udp_port:");
-        Serial.print(udp_port);
-        Serial.println(" }");
+        port(node, info->port_id, info);
     }
-    */
     return true;
 }
 
@@ -176,10 +176,10 @@ void PortUDPTransport::port(UAVNode& node, UAVPortID port_id, UAVNodePortInfo* i
     uint16_t udp_in = 0;
     uint16_t udp_out = 0;
     if((port_id & 0x8000)!=0) {
-        udp_in = udp_port_number(port_id, CanardTransferKindRequest);
-        udp_out = udp_port_number(port_id, CanardTransferKindResponse);
+        udp_in = udp_port_number(port_id, UAVTransfer::KindRequest);
+        udp_out = udp_port_number(port_id, UAVTransfer::KindResponse);
     } else {
-        udp_in = udp_port_number(port_id, CanardTransferKindMessage);
+        udp_in = udp_port_number(port_id, UAVTransfer::KindMessage);
         udp_out = 0;
     }
     // remove or add?
@@ -196,7 +196,8 @@ void PortUDPTransport::port(UAVNode& node, UAVPortID port_id, UAVNodePortInfo* i
         Serial.print(" {");
         if(info->is_input)  { Serial.print(" in:");  Serial.print(udp_in);  }
         if(info->is_output) { Serial.print(" out:"); Serial.print(udp_out); }
-        Serial.print(" }");
+        Serial.print(" } ");
+        Serial.print( FPSTR(info->dtf_name) );
         Serial.println();
         // if the UAVPort requires a udp port listener...
         if(info->is_input) {
@@ -240,68 +241,7 @@ bool PortUDPTransport::stop(UAVNode& node) {
 }
 
 
-/** Function prototype for udp pcb receive callback functions
- * addr and port are in same byte order as in the pcb
- * The callback is responsible for freeing the pbuf
- * if it's not used any more.
- *
- * ATTENTION: Be aware that 'addr' might point into the pbuf 'p' so freeing this pbuf
- *            can make 'addr' invalid, too.
- *
- * @param arg user supplied argument (udp_pcb.recv_arg)
- * @param pcb the udp_pcb which received data
- * @param p the packet buffer that was received
- * @param addr the remote IP address from which the packet was received
- * @param port the remote port from which the packet was received
- */
-void PortUDPTransport::udp_recv_fn(void *arg, struct udp_pcb *pcb, struct pbuf *p, const ip_addr_t *addr, u16_t port) {
-    // use the arg as a UAVNode reference
-    if(arg==nullptr) return;
-    UAVNode* node = (UAVNode *)arg;
-    // turn ip addresses into node ids
-    uint32_t sub_mask = WiFi.subnetMask().v4();
-    uint32_t src_ip = ~(sub_mask) & addr->addr;
-    UAVNodeID src_id = (src_ip>>8)&0xff00 | (src_ip>>24)&0x00ff;
-    uint32_t dst_ip = ~(sub_mask) & pcb->local_ip.addr;
-    UAVNodeID dst_id = (dst_ip>>8)&0xff00 | (dst_ip>>24)&0x00ff;
-    // debug for now
-    /*
-    Serial.print("udp_recv_fn {");
-    //Serial.print(" addr:"); Serial.print(addr->addr,16);
-    //Serial.print(" remote_ip:"); Serial.print(pcb->remote_ip.addr,16);
-    //Serial.print(" local_ip:"); Serial.print(pcb->local_ip.addr,16);
-    Serial.print(" udp_port:"); Serial.print(pcb->local_port);
-    //Serial.print(" flags:"); Serial.print(pcb->flags,1);
-    //Serial.print(" so_options:"); Serial.print(pcb->so_options,1);
-    UAVPortID port_id = udp_port_id(pcb->local_port);
-    // Serial.print(" port_id:"); Serial.print(port_id);
-    if((port_id & 0x8000)==0) {
-        Serial.print(" subject:"); Serial.print(port_id);
-    } else {
-        Serial.print(" service:"); Serial.print(port_id & 0x7fff);
-    }
-    Serial.print(" src:"); Serial.print(src_id);
-    Serial.print(" dst:"); Serial.print(dst_id);
-    Serial.print(" len:"); Serial.print(p->len);
-    Serial.print(" }");
-    Serial.println();
-    */
-    /*
-    Serial.print("[>>"); if(src_id!=0xFFFF) Serial.print(src_id);
-    Serial.print(":"); Serial.print(pcb->local_port);
-    // Serial.print("."); Serial.print(port);
-    Serial.print("<<]");
-    */
-    // wrap the pbuf data in an input stream
-    UAVInStream in((uint8_t*)p->payload, p->len);
-    // decode the frame stream, send to the node if valid
-    UDPTransport::decode_frame(*node, src_id, dst_id, pcb->local_port, in);
-    // our job to release the buffer
-    pbuf_free(p);
-}
-
 // UDP Transport using promiscuous-mode packet reciever
-
 bool PromiscousUDPTransport::start(UAVNode& node) {
     // common udp startup
     if(UDPTransport::start(node)==false) return false;

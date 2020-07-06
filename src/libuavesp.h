@@ -1,17 +1,17 @@
 #include <Arduino.h>
 #include <canard.h>
-#ifndef UV_LIBUAVESP_H_INCLUDED
-#define UV_LIBUAVESP_H_INCLUDED
+#ifndef LIBUAVESP_H_INCLUDED
+#define LIBUAVESP_H_INCLUDED
 
-#include "uv_node.h"
-#include "uv_transport.h"
-#include "uv_transport_serial.h"
-#include "uv_transport_udp.h"
-#include "uv_transport_tcp.h"
-#include "uv_primitive.h"
-#include "uv_app_heartbeat.h"
-#include "uv_app_nodeinfo.h"
-#include "uv_app_portinfo.h"
-#include "uv_app_register.h"
+#include "node.h"
+#include "transport.h"
+#include "transports/serial.h"
+#include "transports/udp.h"
+#include "transports/tcp.h"
+#include "primitive.h"
+#include "apps/heartbeat.h"
+#include "apps/nodeinfo.h"
+#include "apps/portinfo.h"
+#include "apps/register.h"
 
 #endif

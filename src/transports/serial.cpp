@@ -1,8 +1,7 @@
-#include "uv_transport.h"
-#include "uv_transport_serial.h"
-#include "uv_transport_canard.h"
+#include "transport.h"
+#include "serial.h"
+//#include "canard.h"
 #include "crc32c.h"
-#include "numbermap.h"
 #include <map>
 
 // hardware serial port wrapper
@@ -27,12 +26,7 @@ int HardwareSerialPort::writeCount() {
 }
 
 // loopback serial port
-/*
-uint8_t _buffer[128];
-int _size=128;
-int _head=0;
-int _tail=0;
-*/
+
 LoopbackSerialPort::LoopbackSerialPort() { }
 LoopbackSerialPort::~LoopbackSerialPort() { }
 void LoopbackSerialPort::read(uint8_t *buffer, int count) {
@@ -428,8 +422,8 @@ void SerialTransport::encode_frame(UAVTransfer* transfer) {
     uint64_t datatype = transfer->datatype;
     uint32_t frame_index = (1<<31);
     switch(transfer->transfer_kind) {
-        case CanardTransferKindRequest: dataspec |= (1<<15); break;
-        case CanardTransferKindResponse: dataspec |= (1<<15) | (1<<14); break;
+        case UAVTransfer::UAVTransfer::KindRequest: dataspec |= (1<<15); break;
+        case UAVTransfer::UAVTransfer::KindResponse: dataspec |= (1<<15) | (1<<14); break;
     }
     // build the header
     buffer[0] = UV_SERIAL_FRAME_VERSION_0;
@@ -479,22 +473,22 @@ bool SerialTransport::decode_frame(SerialFrame* rx, UAVNode *node) {
             return false;
         }
         // decode priority
-        CanardPriority priority = (CanardPriority)header[1];
+        UAVPriority priority = (UAVPriority)header[1];
         // decode node ids
         uint16_t src_node_id = UAVTransport::decode_uint16(&header[2]);
         uint16_t dst_node_id = UAVTransport::decode_uint16(&header[4]);
         // decode frame data specifier
         uint16_t dataspec = UAVTransport::decode_uint16(&header[6]);
-        CanardTransferKind kind;
+        UAVTransferKind kind;
         uint16_t port_id;
         if( (dataspec & (1<<15)) == 0) {
-            kind = CanardTransferKindMessage;
+            kind = UAVTransfer::KindMessage;
             port_id = dataspec;
         } else {
             if( (dataspec & (1<<14)) == 0) {
-                kind = CanardTransferKindRequest;
+                kind = UAVTransfer::KindRequest;
             } else {
-                kind = CanardTransferKindResponse;
+                kind = UAVTransfer::KindResponse;
             }
             port_id = dataspec & 0x3FFF;
         }
@@ -562,21 +556,7 @@ void SerialTransport::dequeue(int index) {
     // destroy the frame state container, but keep the transfer
     UAVTransfer* transfer = frame->transfer;
     delete frame;
-    // decrement the transfer usage
+    // decrement the transfer usage, this may complete the transfer
     transfer->unref();
-    /*
-    transfer->frame_usage--;
-    // if the counter has hit zero, the transfer is complete
-    if(transfer->frame_usage==0) transfer_complete(transfer);
-    */
 }
 
-/*
-void SerialTransport::transfer_complete(SerialTransfer* transfer) {
-    // notify the transfer callback
-    if(transfer->on_complete) transfer->on_complete();
-    // destroy the transfer storage
-    delete transfer->frame_data;
-    delete transfer;
-}
-*/

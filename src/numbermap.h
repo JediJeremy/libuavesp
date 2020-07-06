@@ -1,7 +1,7 @@
-#ifndef NUMBERMAP_H_INCLUDED
-#define NUMBERMAP_H_INCLUDED
+#ifndef LIBUAVESP_NUMBERMAP_H_INCLUDED
+#define LIBUAVESP_NUMBERMAP_H_INCLUDED
 
-#include "uv_common.h"
+#include "common.h"
 
 typedef void (*NumberMapCall)(void* param);
 typedef struct {

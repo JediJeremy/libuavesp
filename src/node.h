@@ -1,32 +1,25 @@
-#ifndef UV_NODE_H_INCLUDED
-#define UV_NODE_H_INCLUDED
+#ifndef LIBUAVESP_NODE_H_INCLUDED
+#define LIBUAVESP_NODE_H_INCLUDED
 
-#include "uv_common.h"
-#include "uv_transport.h"
-#include <canard.h>
+#include "common.h"
+#include "transport.h"
 #include <stdlib.h>
 #include <vector>
 #include <map>
-// #include <list>
 #include <forward_list>
-
 
 class UAVTask {
     public:
-        virtual void start(UAVNode * node);
-        virtual void stop(UAVNode * node);
-        virtual void loop(const unsigned long t, const int dt, UAVNode * node);
+        virtual void start(UAVNode& node);
+        virtual void stop(UAVNode& node);
+        virtual void loop(UAVNode& node, const unsigned long t, const int dt);
 };
 
-// if our portfunction needs to send a reply, that interface is provided through here
-// using UAVPortReply = void (*) (uint8_t* payload, int payload_size);
-// using UAVPortReply = std::function<void(uint8_t* payload, int payload_size)>;
+// 
 using UAVPortListener = std::function<void(UAVNodeID node_id, UAVInStream& in)>;
 using UAVPortRequest = std::function<void(UAVInStream& in)>;
 using UAVPortReply = std::function<void(UAVOutStream& out)>;
-// port function callback
-// using UAVPortFunction = void (*) (UAVNode * node, uint8_t* payload, int payload_size, UAVPortReply reply);
-// using UAVPortFunction = std::function<void(UAVNode * node, uint8_t* payload, int payload_size, UAVPortReply reply)>;
+//
 using UAVPortFunction = std::function<void(UAVNode& node, UAVInStream& in, UAVPortReply reply)>;
 
 // generic properties for a port
@@ -61,9 +54,6 @@ class UAVPortList {
         UAVNodePortInfo* port_claim(UAVPortID port_id, PGM_P dtf_name);
         // destructor
         ~UAVPortList();
-        // port definition interface
-        // void define_subject(UAVPortID subject_id, PGM_P dtf_name);
-        // void define_service(UAVPortID service_id, PGM_P dtf_name, UAVPortFunction fn);
         // instance list on node
         void debug_ports();
 };
@@ -72,7 +62,6 @@ class UAVPortList {
 class UAVNode {
     protected:
         // transport interfaces
-        CanardInstance  _canard;
         std::vector<UAVTransport *> _transports;
         std::map< UAVPortID, UAVTransferID> _subject_tid;
         std::map< std::tuple<UAVPortID,UAVNodeID>, UAVTransferID> _session_tid;
@@ -103,27 +92,26 @@ class UAVNode {
         // event loop
         void loop(const unsigned long t, const int dt);
         // transport management
-        void transport_add(UAVTransport *transport);
-        void transport_remove(UAVTransport *transport);
+        void add(UAVTransport *transport);
+        void remove(UAVTransport *transport);
         void transfer_receive(UAVTransfer *transfer);
-        // task management
-        void task_add(UAVTask *task);
-        void task_remove(UAVTask *task);
         // port management
         void port_update(UAVPortID port_id, UAVNodePortInfo* port_info);
+        // task management
+        void add(UAVTask *task);
+        void remove(UAVTask *task);
         // subject and service definition
         void define_subject(uint16_t subject_id, PGM_P dtf_name);
         void define_service(uint16_t service_id, PGM_P dtf_name, UAVPortFunction fn);
-        // publish and subscribe methods
+        // subject subscription
+        void subscribe(UAVPortID subject_id, PGM_P dtf_name, UAVPortListener fn);
+        // subject publishing
         void publish(UAVPortID subject_id, UAVDatatypeHash datatype, UAVPriority priority, uint8_t* payload, int size, std::function<void()> callback);
         void publish(UAVPortID subject_id, UAVDatatypeHash datatype, UAVPriority priority, UAVOutStream& out, std::function<void()> callback);
+        // service request & response
         void request(UAVNodeID node_id, UAVPortID service_id, UAVDatatypeHash datatype, UAVPriority priority, uint8_t* payload, int size, UAVPortRequest callback);
         void request(UAVNodeID node_id, UAVPortID service_id, UAVDatatypeHash datatype, UAVPriority priority, UAVOutStream& out, UAVPortRequest callback);
         void respond(UAVNodeID node_id, UAVPortID service_id, UAVTransferID transfer_id, UAVDatatypeHash datatype, UAVPriority priority, uint8_t* payload, size_t size);
-        // void subscribe(UAVNodeID remote_node_id, UAVPortID subject_id, UAVPortListener fn);
-        // void subscribe(UAVPortID subject_id, UAVPortListener fn);
-        // void subscribe(UAVPortID subject_id, UAVDatatypeHash datatype, UAVPortListener fn);
-        void subscribe(UAVPortID subject_id, PGM_P dtf_name, UAVPortListener fn);
         // datatype hash functions - used to turn arbitrary-length full datatype names into fixed-length integers with group-sortable semantics
         static UAVDatatypeHash datatypehash_P(PGM_P name);
         static UAVDatatypeHash datatypehash_P(PGM_P name, size_t size);

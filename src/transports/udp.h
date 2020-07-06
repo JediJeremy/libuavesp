@@ -1,9 +1,9 @@
-#ifndef UV_TRANSPORT_UDP_H_INCLUDED
-#define UV_TRANSPORT_UDP_H_INCLUDED
+#ifndef LIBUAVESP_TRANSPORT_UDP_H_INCLUDED
+#define LIBUAVESP_TRANSPORT_UDP_H_INCLUDED
 
-#include "uv_common.h"
-#include "uv_transport.h"
-#include "uv_transport_serial.h"
+#include "common.h"
+#include "transport.h"
+#include "serial.h"
 #include "numbermap.h"
 #include <ESP8266WiFi.h>
 
@@ -13,6 +13,10 @@
 #include "lwip/igmp.h"
 #include "lwip/mem.h"
 
+/*
+  UDPTransport abstract interface
+  This base class provides a few shared capabilities, such as sending arbitrary datagrams
+*/ 
 class UDPTransport : public UAVTransport {
     protected:
         // lwip port control block
@@ -32,6 +36,10 @@ class UDPTransport : public UAVTransport {
         void send(UAVTransfer* transfer) override;
 };
 
+/*
+    The PortUDPTransport concrete implementation maintains a map of 'standard' lwip ports to listen on
+    which all call a single datagram recieve function. 
+*/
 class PortUDPTransport : public UDPTransport {
     protected:
         std::map< uint16_t, udp_pcb *> listeners;
@@ -43,6 +51,10 @@ class PortUDPTransport : public UDPTransport {
         bool stop(UAVNode& node) override;
 };
 
+/*
+    Listening to all packets isntead of a whitelist
+    Not fully implemented yet.
+*/
 class PromiscousUDPTransport : public UDPTransport {
     protected:
         

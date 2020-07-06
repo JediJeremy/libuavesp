@@ -1,4 +1,4 @@
-#include "uv_transport_tcp.h"
+#include "tcp.h"
 
 TCPSerialPort::TCPSerialPort(WiFiClient* client) {
     _client = client;
@@ -35,7 +35,7 @@ TCPSerialTransport::TCPSerialTransport (WiFiClient* client, UAVSerialPort *port,
 
 TCPSerialTransport::~TCPSerialTransport() {
     if(unique_node!=nullptr) {
-        unique_node->transport_remove(this);
+        unique_node->remove(this);
         delete unique_node;
     }
     close();
@@ -109,7 +109,7 @@ void TCPNode::loop(const unsigned long t, const int dt) {
             serial->unique_node = n;
         }
         if(n!=nullptr) {
-            n->transport_add(serial);
+            n->add(serial);
         }
     }
     // for each serial link
@@ -118,7 +118,7 @@ void TCPNode::loop(const unsigned long t, const int dt) {
         TCPSerialTransport* serial = *i;
         if(serial->closed()) {
             if(_node) {
-                _node->transport_remove(serial);
+                _node->remove(serial);
             }
             i = _clients.erase(i);
             delete serial;

@@ -1,4 +1,4 @@
-#include "uv_app_heartbeat.h"
+#include "heartbeat.h"
 
 
 void HeartbeatApp::set_status(uint8_t health, uint8_t mode, uint32_t vendor) {
@@ -7,18 +7,18 @@ void HeartbeatApp::set_status(uint8_t health, uint8_t mode, uint32_t vendor) {
     _message.vendor = vendor;
 }
 
-void HeartbeatApp::send(UAVNode *node) {
+void HeartbeatApp::send(UAVNode& node) {
     // send the next heartbeat message
     _message.uptime = millis() / (unsigned long)1000;
     uint8_t payload[16];
     UAVOutStream stream(payload,16);
     stream << _message;
-    node->publish(subjectid_uavcan_node_Heartbeat_1_0, dthash_uavcan_node_Heartbeat_1_0, CanardPriorityNominal, stream.output_buffer, stream.output_index, []() {
+    node.publish(subjectid_uavcan_node_Heartbeat_1_0, dthash_uavcan_node_Heartbeat_1_0, UAVTransfer::PriorityNominal, stream.output_buffer, stream.output_index, []() {
         // Serial.println("heartbeat sent!");
     });
 }
 
-void HeartbeatApp::start(UAVNode *node) {
+void HeartbeatApp::start(UAVNode& node) {
     // send the initialization mode heartbeat
     set_status(HEARTBEAT_HEALTH_NOMINAL, HEARTBEAT_MODE_INITIALIZATION, HEARTBEAT_STATUS_NONE);
     send(node);
@@ -27,13 +27,13 @@ void HeartbeatApp::start(UAVNode *node) {
     _timer = HEARTBEAT_DELAY;
 }
 
-void HeartbeatApp::stop(UAVNode *node) {
+void HeartbeatApp::stop(UAVNode& node) {
     // send the offline mode heartbeat
     set_status(HEARTBEAT_HEALTH_NOMINAL, HEARTBEAT_MODE_OFFLINE, HEARTBEAT_STATUS_NONE);
     send(node);
 }
 
-void HeartbeatApp::loop(unsigned long t,int dt, UAVNode *node) {
+void HeartbeatApp::loop(UAVNode& node, unsigned long t,int dt) {
     long delta = t - _timer;
     if(delta>0) {
         // send heartbeat

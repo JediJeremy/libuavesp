@@ -1,9 +1,9 @@
-#ifndef UV_APP_REGISTER_H_INCLUDED
-#define UV_APP_REGISTER_H_INCLUDED
+#ifndef LIBUAVESP_APP_REGISTER_H_INCLUDED
+#define LIBUAVESP_APP_REGISTER_H_INCLUDED
 
-#include "uv_common.h"
-#include "uv_node.h"
-#include "uv_primitive.h"
+#include "common.h"
+#include "node.h"
+#include "primitive.h"
 
 static const char     dtname_uavcan_register_Name_1_0[] PROGMEM = "uavcan.register.Name.1.0";
 class RegisterName : public UAVPrimitiveString<uint8_t,50> { };

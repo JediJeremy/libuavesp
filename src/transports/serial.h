@@ -1,8 +1,8 @@
-#ifndef UV_TRANSPORT_SERIAL_H_INCLUDED
-#define UV_TRANSPORT_SERIAL_H_INCLUDED
+#ifndef LIBUAVESP_TRANSPORT_SERIAL_H_INCLUDED
+#define LIBUAVESP_TRANSPORT_SERIAL_H_INCLUDED
 
-#include "uv_common.h"
-#include "uv_node.h"
+#include "common.h"
+#include "node.h"
 #include "numbermap.h"
 
 #define UV_SERIAL_FRAME_VERSION_0   0x00
@@ -89,13 +89,6 @@ typedef struct {
 
 using SerialOOBHandler = void (*) (UAVTransport *transport, SerialFrame* rx, uint8_t* buffer, int count);
 
-/*
-class SerialInterface {
-    protected:
-    public:
-};
-*/
-
 // concrete serial transport
 class SerialTransport : public UAVSerialTransport {
     protected:
@@ -120,7 +113,6 @@ class SerialTransport : public UAVSerialTransport {
         void parse_buffer(uint8_t* parse, int count, UAVNode* node);
         // transmit queue management
         void dequeue(int index);
-        // static void transfer_complete(SerialTransfer* transfer);
 };
 
 

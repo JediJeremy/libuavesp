@@ -1,9 +1,9 @@
-#ifndef UV_TRANSPORT_TCP_H_INCLUDED
-#define UV_TRANSPORT_TCP_H_INCLUDED
+#ifndef LIBUAVESP_TRANSPORT_TCP_H_INCLUDED
+#define LIBUAVESP_TRANSPORT_TCP_H_INCLUDED
 
-#include "uv_common.h"
-#include "uv_transport.h"
-#include "uv_transport_serial.h"
+#include "common.h"
+#include "transport.h"
+#include "serial.h"
 #include "numbermap.h"
 #include <ESP8266WiFi.h>
 #include <vector>
