@@ -43,7 +43,8 @@ class UDPTransport : public UAVTransport {
 */
 class PortUDPTransport : public UDPTransport {
     protected:
-        std::map< uint16_t, udp_pcb *> listeners;
+        std::map< uint16_t, udp_pcb* > listeners;
+        udp_pcb* port_bind(UAVNode& node, uint16_t udp_port, boolean bind);
         static void udp_recv_fn(void *arg, struct udp_pcb *pcb, struct pbuf *p, const ip_addr_t *addr, u16_t port);
     public:
         // serial transport methods

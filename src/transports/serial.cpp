@@ -57,11 +57,6 @@ int LoopbackSerialPort::writeCount() {
 
 // debug serial port
 
-DebugSerialPort::DebugSerialPort(UAVSerialPort& port) {
-    _port = &port;
-    _owner = false;
-}
-
 DebugSerialPort::DebugSerialPort(UAVSerialPort* port, bool owner) {
     _port = port;
     _owner = owner;

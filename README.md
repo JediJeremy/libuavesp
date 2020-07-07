@@ -60,8 +60,8 @@ Create a UAVNode object in the usual way. Nodes start 'anonymous' and should eve
 If the node is going to be associated with TCP or UDP then use the WiFi address to set the id. 
 Or ids can be statically configured, or allocated with the PnP protocol.
 ```C++
-UAVNode uav_node();
-uav_node.local_node_id = ip_addr[3];
+UAVNode* uav_node = new UAVNode();
+uav_node->set_ip(WiFi);
 ```
 
 Transports and Apps can be attached to the node. It is expected that transports using local hardware should be set up first,
@@ -72,23 +72,23 @@ then starting a SerialTransport around the wrapped port, then adding the transpo
 
 ```C++
 // UAVCAN Node
-UAVNode uav_node();
+UAVNode* uav_node = new UAVNode();
 
 void setup() {
   // add serial transport to the node
-  uav_node.add( new SerialTransport(new HardwareSerialPort(Serial), true, nullptr) );
+  uav_node->add( new SerialTransport(new HardwareSerialPort(Serial), true, nullptr) );
 ```
 
 Note the owner flag set to 'true' which means the wrapper port will be auto-destroyed with the transport.
 
 You can even recieve "out of band" data - anything that doesn't look like protocol data, such as humans typing on terminals - 
-if you provide an 'oob handler', which we have not done here. 
+if you provide an 'oob handler'. 
 
 
 One of the simplest serial interfaces is the loopback interface, used mostly for debugging. 
 ```C++
   // add a loopback serial transport for testing
-  uav_node.add( new SerialTransport( new LoopbackSerialPort(), true, nullptr) );
+  uav_node->add( new SerialTransport( new LoopbackSerialPort(), true, nullptr) );
 ```
 
 The SerialTransport is a high level protocol object, it is the SerialPort object which is extended
@@ -97,7 +97,7 @@ to create new kinds of serial connections or transcoders.
 eg. To hex-dump frames on serial port 0, use this instead:
 ```C++
   // wrap hardware serial port in a debug port
-  uav_node.add( new SerialTransport(new DebugSerialPort(new HardwareSerialPort(Serial),true), true, serial_oob) );
+  uav_node->add( new SerialTransport(new DebugSerialPort(new HardwareSerialPort(Serial),true), true, nullptr) );
 ```
 
 The UDP transport is commonly used. You just need to create one of the concrete transports and
@@ -116,9 +116,9 @@ This example will create two seperate TCP servers from the same node, one normal
 It's best to wait until the WiFi is connected before trying this.
 ```C++
   // start a tcp server over the node on port 66
-  tcp_node = new TCPNode(66,&uav_node,false,nullptr);
+  tcp_node = new TCPNode(66,uav_node,false,nullptr);
   // start a debug tcp server over the node on port 67
-  tcp_debug = new TCPNode(67,&uav_node,true,nullptr);
+  tcp_debug = new TCPNode(67,uav_node,true,nullptr);
 }
 ```
 It is entirely appropriate for a device to run multiple UAVNode interface objects for different hardware interfaces. 
@@ -132,7 +132,7 @@ void loop() {
   // [ update clocks and times ]
   // ...
   // UAVCAN node tasks
-  uav_node.loop(t,dt);
+  uav_node->loop(t,dt);
   // TCP server tasks
   tcp_node->loop(t,dt);
   tcp_debug->loop(t,dt);
@@ -143,6 +143,55 @@ void loop() {
 
 Attaching transports to an otherwise empty node doesn't create interesting behavior. 
 A network application consists of messages exchanged between ports, defined as subjects and services. 
+
+We can listen for specific message types being broadcast on the network. This will print out
+every heartbeat recieved by the node.
+```C++
+  // attach a listener for heartbeat messages
+  uav_node->subscribe(
+    subjectid_uavcan_node_Heartbeat_1_0, 
+    dtname_uavcan_node_Heartbeat_1_0, 
+    [](UAVNodeID node_id, UAVInStream& in) {
+      HeartbeatMessage m;
+      in >> m;
+      Serial.print("heartbeat detected {");
+      Serial.print(" node:#"); Serial.print(node_id);
+      Serial.print(" uptime:"); Serial.print(m.uptime);
+      Serial.print("s health:"); Serial.print(m.health);
+      Serial.print(" mode:"); Serial.print(m.mode); 
+      Serial.print(" vendor:"); Serial.print(m.vendor,16);
+      Serial.println(" }");
+    }
+  );
+```
+
+
+We can attach our own service functions to the node. This will tell the node to start accepting requests of
+this datatype, and route the request to our function. inline lambda functions or static object functions will
+work so long as they have the correct (*)(node,in,reply) signature.
+
+Typical behavior is to decode the incoming data stream into a datatype object (which handles all the byte parsing)
+then do some side-effect, create a return datatype object, and serialize that into a buffer for the reply.
+```C++
+  uav_node->define_service( 
+    portid_ServiceName_1_0, // integer port number
+    dtname_ServiceName_1_0, // PROGMEM flash string containing full canonical datatype name and version
+    true,                   // do we reply
+    [](UAVNode& node, UAVInStream& in, UAVPortReply reply) {
+      // decode the request using a datatype object
+      ServiceRequest q;
+      in >> q;
+      // compose a reply using a datatype object
+      ServiceReply r;
+      // serialize the reply into a fixed-sized buffer
+      uint8_t buffer[128];
+      UAVOutStream out(buffer,128);
+      out << r;
+      // reply with the filled stream
+      reply(out);
+    }
+  );
+```
 
 Groups of these can be defined and 'installed' on the node seperately. There are several applications
 defined by the specification that are provided with reference implementations.
@@ -181,48 +230,7 @@ code and a short string as part of the request. The remote node will send a stat
   );
 ```
 
-We can attach our own service functions to the node, by supplying all the port metadata and a lambda function.
-```C++
-  uav_node.define_service( 
-    portid_ServiceName_1_0, // integer port number
-    dtname_ServiceName_1_0, // PROGMEM flash string containing full canonical datatype name and version
-    true,                   // do we reply
-    [&registers](UAVNode * node, UAVInStream& in, UAVPortReply reply) {
-      // decode the request
-      ServiceRequest q;
-      in >> q;
-      // compose a reply
-      ServiceReply r;
-      // serialize the reply
-      uint8_t buffer[128];
-      UAVOutStream out(buffer,128);
-      out << r;
-      reply(out);
-    }
-  );
-```
-
-We can listen for specific message types being broadcast on the network. This example will print out
-every heartbeat recieved by the node.
-```C++
-  // attach a listener for heartbeat messages
-  uav_node->subscribe(
-    subjectid_uavcan_node_Heartbeat_1_0, 
-    dtname_uavcan_node_Heartbeat_1_0, 
-    [](UAVNodeID node_id, UAVInStream& in) {
-      HeartbeatMessage m;
-      in >> m;
-      Serial.print("heartbeat detected {");
-      Serial.print(" node:#"); Serial.print(node_id);
-      Serial.print(" uptime:"); Serial.print(m.uptime);
-      Serial.print("s health:"); Serial.print(m.health);
-      Serial.print(" mode:"); Serial.print(m.mode); 
-      Serial.print(" vendor:"); Serial.print(m.vendor,16);
-      Serial.println(" }");
-    }
-  );
-```
-
-
 ## Examples
-* Order66.ino Tests Node.GetInfo and Node.ExecuteCommand and will occasionally command the execution of order 66.
+* HeartbeatListener.ino subscribes to heartbeat messages (including it's own) on a variety of network transports and logs them to the serial port.
+* SerialOOB.ino shows how to attach "out of band" functions when setting up serial transports, in case you expect a human to also be on the line
+* Order66.ino Tests Node.GetInfo and Node.ExecuteCommand and will occasionally command the execution of order 66 on nearby nodes.

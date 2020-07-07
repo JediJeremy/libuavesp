@@ -47,8 +47,10 @@ class TCPNode {
         // out-of-band handler for client transports
         SerialOOBHandler oob_handler = nullptr;
         // con/destructors
-        TCPNode (int server_port, UAVNode * node, bool debug, SerialOOBHandler oob);
-        TCPNode (int server_port, std::function<UAVNode*()> node_fn, bool debug, SerialOOBHandler oob);
+        TCPNode(int server_port, UAVNode * node, bool debug, SerialOOBHandler oob);
+        TCPNode(int server_port, UAVNode * node) : TCPNode(server_port, node, false, nullptr) {}
+        TCPNode(int server_port, std::function<UAVNode*()> node_fn, bool debug, SerialOOBHandler oob);
+        TCPNode(int server_port, std::function<UAVNode*()> node_fn) : TCPNode(server_port, node_fn, false, nullptr) {}
         virtual ~TCPNode();
         // tcp server interface
         bool start();

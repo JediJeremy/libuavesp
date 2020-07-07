@@ -70,8 +70,9 @@ class DebugSerialPort : public UAVSerialPort {
         int   write_line(int wc);
         void end_of_line(int mode);
     public:
-        DebugSerialPort(UAVSerialPort& port);
         DebugSerialPort(UAVSerialPort* port, bool owner);
+        DebugSerialPort(UAVSerialPort* port) : DebugSerialPort(port,true) { };
+        DebugSerialPort(UAVSerialPort& port) : DebugSerialPort(&port,false) { };
         ~DebugSerialPort();
         void read(uint8_t *buffer, int count) override;
         void write(uint8_t *buffer, int count) override;
@@ -103,6 +104,7 @@ class SerialTransport : public UAVSerialTransport {
         SerialOOBHandler oob_handler = nullptr;
         // con/destructors
         SerialTransport(UAVSerialPort* port, bool owner, SerialOOBHandler oob);
+        SerialTransport(UAVSerialPort* port) : SerialTransport{port,true,nullptr} {};
         SerialTransport(UAVSerialPort& port) : SerialTransport{&port,false,nullptr} {};
         virtual ~SerialTransport();
         // serial transport methods

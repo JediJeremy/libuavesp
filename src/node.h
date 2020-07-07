@@ -7,6 +7,7 @@
 #include <vector>
 #include <map>
 #include <forward_list>
+#include <ESP8266WiFi.h>
 
 class UAVTask {
     public:
@@ -71,15 +72,14 @@ class UAVNode {
         int _task_timer = 0;
         std::vector<UAVTask *> _tasks;
         // service maps
+        std::map< std::tuple<UAVPortID,UAVDatatypeHash>, UAVPortListener> _subscribe_portdata;
         std::map< std::tuple<UAVPortID,UAVTransferID>, UAVPortRequest> _requests_inflight;
         std::multimap< uint32_t, std::tuple<UAVPortID,UAVTransferID>> _requests_timeout;
-        // std::map< std::tuple<UAVNodeID,UAVPortID>, UAVPortListener> _subscribe_nodeport;
-        // std::map< UAVPortID, UAVPortListener> _subscribe_port;
-        std::map< std::tuple<UAVPortID,UAVDatatypeHash>, UAVPortListener> _subscribe_portdata;
         // timeout management
-        // std::multimap< uint32_t, void(*)()> _timer_events;
         void process_timeouts(uint32_t t1_ms, uint32_t t2_ms);
         void debug_transfer(UAVTransfer *transfer);
+        // port management
+        void port_update(UAVPortID port_id, UAVNodePortInfo* port_info);
     public:
         // public variables
         UAVNodeID local_node_id = 0;    // local node id
@@ -89,14 +89,14 @@ class UAVNode {
         // con/destructor
         UAVNode();
         virtual ~UAVNode();
+        // setup IP address properties from a wifi connection
+        void set_id(ESP8266WiFiClass& wifi);
         // event loop
         void loop(const unsigned long t, const int dt);
         // transport management
         void add(UAVTransport *transport);
         void remove(UAVTransport *transport);
         void transfer_receive(UAVTransfer *transfer);
-        // port management
-        void port_update(UAVPortID port_id, UAVNodePortInfo* port_info);
         // task management
         void add(UAVTask *task);
         void remove(UAVTask *task);

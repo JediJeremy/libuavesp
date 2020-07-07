@@ -22,41 +22,9 @@ UAVPortID udp_port_id(uint16_t udp_port) {
     return 0;
 }
 
-/** Function prototype for udp pcb receive callback functions
- * addr and port are in same byte order as in the pcb
- * The callback is responsible for freeing the pbuf
- * if it's not used any more.
- *
- * ATTENTION: Be aware that 'addr' might point into the pbuf 'p' so freeing this pbuf
- *            can make 'addr' invalid, too.
- *
- * @param arg user supplied argument (udp_pcb.recv_arg)
- * @param pcb the udp_pcb which received data
- * @param p the packet buffer that was received
- * @param addr the remote IP address from which the packet was received
- * @param port the remote port from which the packet was received
- */
-void PortUDPTransport::udp_recv_fn(void *arg, struct udp_pcb *pcb, struct pbuf *p, const ip_addr_t *addr, u16_t port) {
-    // use the arg as a UAVNode reference
-    if(arg==nullptr) return;
-    UAVNode* node = (UAVNode *)arg;
-    // turn ip addresses into node ids
-    uint32_t sub_mask = WiFi.subnetMask().v4();
-    uint32_t src_ip = ~(sub_mask) & addr->addr;
-    UAVNodeID src_id = (src_ip>>8)&0xff00 | (src_ip>>24)&0x00ff;
-    uint32_t dst_ip = ~(sub_mask) & pcb->local_ip.addr;
-    UAVNodeID dst_id = (dst_ip>>8)&0xff00 | (dst_ip>>24)&0x00ff;
-    // wrap the pbuf data in an input stream
-    UAVInStream in((uint8_t*)p->payload, p->len);
-    // decode the frame stream, send to the node if valid
-    UDPTransport::decode_frame(*node, src_id, dst_id, pcb->local_port, in);
-    // our job to release the buffer
-    pbuf_free(p);
-}
-
-// serial transport methods
+// UDP transport
 bool UDPTransport::start(UAVNode& node) {
-    // create the nameless port control
+    // create the common 'anonymous' port control for subject messages. link it to port 66.
     _pcb = udp_new();
     _pcb->local_port = 66;
     // calc the subnet and broadcast address. start from the local ip.
@@ -64,8 +32,7 @@ bool UDPTransport::start(UAVNode& node) {
     subnet_mask = WiFi.subnetMask().v4();
     subnet_ip = local_ip & subnet_mask;
     broadcast_ip = local_ip | ~subnet_mask;
-    // fix to allow reception of broadcast packets - never tested
-    // wifi_set_sleep_type(NONE_SLEEP_T); 
+    // 
     return true;
 }
 
@@ -171,74 +138,122 @@ bool PortUDPTransport::start(UAVNode& node) {
     return true;
 }
 
+bool PortUDPTransport::stop(UAVNode& node) {
+    // remove all active port liseners
+    for(auto e : listeners) {
+        auto cb = e.second;
+        udp_remove(cb);
+        delete cb;
+    }
+    return true;
+}
+
+udp_pcb* PortUDPTransport::port_bind(UAVNode& node, uint16_t udp_port, boolean bind) {
+    if(udp_port==0) return nullptr;
+    // check if we already had one
+    udp_pcb* cb = listeners[udp_port];
+    if(bind) {
+        if(cb==nullptr) {
+            // create one
+            cb = udp_new();
+            udp_recv(cb, &udp_recv_fn, (void *)&node);
+            const ip_addr_t udp_addr = {
+                .addr = local_ip
+            };
+            err_t err = udp_bind(cb, &udp_addr, udp_port);
+            listeners[udp_port] = cb;
+        }
+        // we now definitely have one
+        return cb;
+    } else {
+        if(cb!=nullptr) {
+            // destroy it
+            udp_remove(cb);
+            delete cb;
+            // listeners[udp_port] = nullptr;
+            listeners.erase(udp_port);
+        }
+        // we now definitely don't have one
+        return nullptr;
+    }
+}
+
+// reconfigure port
 void PortUDPTransport::port(UAVNode& node, UAVPortID port_id, UAVNodePortInfo* info) { 
-    // what are the associated udp ports
+    // what are the associated udp ports we need to maintain?
     uint16_t udp_in = 0;
     uint16_t udp_out = 0;
-    if((port_id & 0x8000)!=0) {
+    boolean service = (port_id & 0x8000) != 0;
+    if(service) {
         udp_in = udp_port_number(port_id, UAVTransfer::KindRequest);
         udp_out = udp_port_number(port_id, UAVTransfer::KindResponse);
     } else {
         udp_in = udp_port_number(port_id, UAVTransfer::KindMessage);
         udp_out = 0;
     }
-    // remove or add?
-    if(info==nullptr) {
-        // port was removed
-
-    } else {
-        // port is new to us
-        if((info->port_id & 0x8000)!=0) {
-            Serial.print("service #"); Serial.print(info->port_id & 0x7FFF);
-        } else {
-            Serial.print("subject #"); Serial.print(info->port_id);
-        }
+    // debug
+    if(info!=nullptr) {
+        Serial.print(service ? "service #" : "subject #"); 
+        Serial.print(info->port_id & 0x7FFF);
         Serial.print(" {");
-        if(info->is_input)  { Serial.print(" in:");  Serial.print(udp_in);  }
-        if(info->is_output) { Serial.print(" out:"); Serial.print(udp_out); }
+        if(info->is_input)  { 
+            Serial.print(" in:");  Serial.print(udp_in); 
+        }
+        if(info->is_output) {
+            if(service) {
+                Serial.print(" out:"); Serial.print(udp_out);
+            } else {
+                Serial.print(" out");
+            }
+        }
         Serial.print(" } ");
         Serial.print( FPSTR(info->dtf_name) );
         Serial.println();
-        // if the UAVPort requires a udp port listener...
-        if(info->is_input) {
-            // check if we already had one
-            auto cb = listeners[udp_in];
-            if(cb==nullptr) {
-                // create one
-                cb = udp_new();
-                udp_recv(cb, &udp_recv_fn, (void *)&node);
-                const ip_addr_t udp_addr = {
-                    .addr = local_ip
-                };
-                err_t err = udp_bind(cb, &udp_addr, udp_in);
-                listeners[udp_in] = cb;
-            }
-            // we now definitely have one
-        }
-        // if the UAVPort requires a udp port listener...
-        if((info->is_output) && (udp_out!=0)) {
-            // check if we already had one
-            auto cb = listeners[udp_out];
-            if(cb==nullptr) {
-                // create one
-                cb = udp_new();
-                udp_recv(cb, &udp_recv_fn, (void *)&node);
-                const ip_addr_t udp_addr = {
-                    .addr = local_ip
-                };
-                err_t err = udp_bind(cb, &udp_addr, udp_out);
-                listeners[udp_out] = cb;
-            }
-            // we now definitely have one
-        }
+    }
+    // remove or add?
+    if(info==nullptr) {
+        // port was removed
+        port_bind(node, udp_in, false);
+        port_bind(node, udp_out, false);
+    } else {
+        // UAVPort may require udp port listeners...
+        port_bind(node, udp_in, info->is_input);
+        port_bind(node, udp_out, info->is_output);
     }
 }
 
-bool PortUDPTransport::stop(UAVNode& node) {
-    // remove all active port liseners
-
-    return true;
+/** Function prototype for udp pcb receive callback functions
+ * addr and port are in same byte order as in the pcb
+ * The callback is responsible for freeing the pbuf
+ * if it's not used any more.
+ *
+ * ATTENTION: Be aware that 'addr' might point into the pbuf 'p' so freeing this pbuf
+ *            can make 'addr' invalid, too.
+ *
+ * @param arg user supplied argument (udp_pcb.recv_arg)
+ * @param pcb the udp_pcb which received data
+ * @param p the packet buffer that was received
+ * @param addr the remote IP address from which the packet was received
+ * @param port the remote port from which the packet was received
+ */
+void PortUDPTransport::udp_recv_fn(void *arg, struct udp_pcb *pcb, struct pbuf *p, const ip_addr_t *addr, u16_t port) {
+    // use the arg as a UAVNode reference
+    if(arg==nullptr) return;
+    UAVNode* node = (UAVNode *)arg;
+    // turn ip addresses into node ids
+    uint32_t sub_mask = WiFi.subnetMask().v4();
+    uint32_t src_ip = ~(sub_mask) & addr->addr;
+    UAVNodeID src_id = (src_ip>>8)&0xff00 | (src_ip>>24)&0x00ff;
+    uint32_t dst_ip = ~(sub_mask) & pcb->local_ip.addr;
+    UAVNodeID dst_id = (dst_ip>>8)&0xff00 | (dst_ip>>24)&0x00ff;
+    // wrap the pbuf data in an input stream
+    UAVInStream in( (uint8_t*)p->payload, p->len );
+    // decode the frame stream to the node
+    UDPTransport::decode_frame(*node, src_id, dst_id, pcb->local_port, in);
+    // our responsibility to release the buffer
+    pbuf_free(p);
 }
+
 
 
 // UDP Transport using promiscuous-mode packet reciever

@@ -40,7 +40,7 @@ void NodeinfoApp::service_ExecuteCommand_v1(UAVNode& node, UAVInStream& in, UAVP
     // decode the request
     NodeExecuteCommandRequest request;
     in >> request;
-    Serial.print("command["); Serial.print(request.command); Serial.print("] "); Serial.println(request.parameter.c_str());
+    // Serial.print("command["); Serial.print(request.command); Serial.print("] "); Serial.println(request.parameter.c_str());
     switch(request.command) {
         case 65535: // COMMAND_RESTART
         case 65534: // COMMAND_POWER_OFF
@@ -76,7 +76,6 @@ void NodeinfoApp::app_v1(UAVNode *node) {
         service_ExecuteCommand_v1
     );
 }
-
 
 void NodeinfoApp::GetInfo(UAVNode* node, uint32_t node_id, std::function<void(NodeGetInfoReply*)> fn) {
     // send an empty request
