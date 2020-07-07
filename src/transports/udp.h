@@ -5,14 +5,13 @@
 #include "../node.h"
 #include "../transport.h"
 #include "../numbermap.h"
-// #include "serial.h"
 
-#include <ESP8266WiFi.h>
 #include "lwip/opt.h"
 #include "lwip/udp.h"
 #include "lwip/inet.h"
 #include "lwip/igmp.h"
 #include "lwip/mem.h"
+#include <ESP8266WiFi.h>
 
 /*
   UDPTransport abstract interface
@@ -26,10 +25,15 @@ class UDPTransport : public UAVTransport {
         static void decode_frame(UAVNode& node, UAVNodeID src_node_id, UAVNodeID dst_node_id, uint16_t udp_port, UAVInStream& in);
         ip_addr_t node_addr(UAVNodeID node_id);
     public:
+        // constructor and destructor
+        UDPTransport(uint16_t message_port);
+        ~UDPTransport();
+        // ip properties
         uint32_t local_ip;
         uint32_t subnet_ip;
         uint32_t subnet_mask;
         uint32_t broadcast_ip;
+        void reset_ip();
         // serial transport methods
         bool start(UAVNode& node) override;
         bool stop(UAVNode& node) override;
@@ -44,9 +48,10 @@ class UDPTransport : public UAVTransport {
 class PortUDPTransport : public UDPTransport {
     protected:
         std::map< uint16_t, udp_pcb* > listeners;
-        udp_pcb* port_bind(UAVNode& node, uint16_t udp_port, boolean bind);
+        udp_pcb* port_bind(UAVNode& node, uint16_t udp_port, bool bind);
         static void udp_recv_fn(void *arg, struct udp_pcb *pcb, struct pbuf *p, const ip_addr_t *addr, u16_t port);
     public:
+        PortUDPTransport(uint16_t message_port) : UDPTransport(message_port) { }
         // serial transport methods
         bool start(UAVNode& node) override;
         void port(UAVNode& node, UAVPortID port_id, UAVNodePortInfo* info) override;

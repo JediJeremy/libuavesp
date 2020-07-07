@@ -22,24 +22,34 @@ UAVPortID udp_port_id(uint16_t udp_port) {
     return 0;
 }
 
-// UDP transport
-bool UDPTransport::start(UAVNode& node) {
-    // create the common 'anonymous' port control for subject messages. link it to port 66.
+// UDPTransport abstract class
+UDPTransport::UDPTransport(uint16_t message_port) {
+    // create the common 'anonymous' port control for subject messages.
     _pcb = udp_new();
-    _pcb->local_port = 66;
+    _pcb->local_port = message_port;
+    // use the wifi object to reset our ip address properties
+    reset_ip();
+}
+
+UDPTransport::~UDPTransport() {
+    // deallocate the nameless port
+    udp_remove(_pcb);
+    _pcb = nullptr;
+}
+
+void UDPTransport::reset_ip() {
     // calc the subnet and broadcast address. start from the local ip.
     local_ip = WiFi.localIP().v4();
     subnet_mask = WiFi.subnetMask().v4();
     subnet_ip = local_ip & subnet_mask;
     broadcast_ip = local_ip | ~subnet_mask;
-    // 
+}
+
+bool UDPTransport::start(UAVNode& node) {
     return true;
 }
 
 bool UDPTransport::stop(UAVNode& node) {
-    // deallocate the nameless port
-    udp_remove(_pcb);
-    _pcb = nullptr;
     return true;
 }
 
@@ -148,7 +158,7 @@ bool PortUDPTransport::stop(UAVNode& node) {
     return true;
 }
 
-udp_pcb* PortUDPTransport::port_bind(UAVNode& node, uint16_t udp_port, boolean bind) {
+udp_pcb* PortUDPTransport::port_bind(UAVNode& node, uint16_t udp_port, bool bind) {
     if(udp_port==0) return nullptr;
     // check if we already had one
     udp_pcb* cb = listeners[udp_port];
@@ -183,7 +193,7 @@ void PortUDPTransport::port(UAVNode& node, UAVPortID port_id, UAVNodePortInfo* i
     // what are the associated udp ports we need to maintain?
     uint16_t udp_in = 0;
     uint16_t udp_out = 0;
-    boolean service = (port_id & 0x8000) != 0;
+    bool service = (port_id & 0x8000) != 0;
     if(service) {
         udp_in = udp_port_number(port_id, UAVTransfer::KindRequest);
         udp_out = udp_port_number(port_id, UAVTransfer::KindResponse);

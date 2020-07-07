@@ -13,9 +13,14 @@ void HeartbeatApp::send(UAVNode& node) {
     uint8_t payload[16];
     UAVOutStream stream(payload,16);
     stream << _message;
-    node.publish(subjectid_uavcan_node_Heartbeat_1_0, dthash_uavcan_node_Heartbeat_1_0, UAVTransfer::PriorityNominal, stream.output_buffer, stream.output_index, []() {
-        // Serial.println("heartbeat sent!");
-    });
+    node.publish(
+        subjectid_uavcan_node_Heartbeat_1_0, 
+        dthash_uavcan_node_Heartbeat_1_0, 
+        UAVTransfer::PriorityNominal, 
+        stream, // .output_buffer, stream.output_index, 
+        // []() { Serial.println("heartbeat sent!"); }
+        nullptr
+    );
 }
 
 void HeartbeatApp::start(UAVNode& node) {

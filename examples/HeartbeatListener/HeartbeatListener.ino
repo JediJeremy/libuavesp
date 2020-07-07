@@ -32,7 +32,7 @@ void uavcan_setup() {
   // add a loopback serial transport for testing
   uav_node->add( new SerialTransport( new LoopbackSerialPort() ) );
   // start the UDP transport for the node, since we have network
-  uav_node->add( new PortUDPTransport() );
+  uav_node->add( new PortUDPTransport(66) );
   // start a tcp server over the node on port 66
   tcp_node = new TCPNode(66,uav_node);
   // start a hex debug tcp server over the node on port 67

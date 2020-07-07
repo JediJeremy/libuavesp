@@ -56,7 +56,7 @@ void uavcan_setup() {
   // uav_node->add( new SerialTransport(serial_port_0) );
   uav_node->add( new SerialTransport(debug_port_0) );
   // start the UDP transport for the node, since we have network
-  uav_node->add( new PortUDPTransport() );
+  uav_node->add( new PortUDPTransport(66) );
   // start a tcp server over the node on port 66 with oob handler
   tcp_node = new TCPNode(66,uav_node,false,tcp_oob);
   // start a debug tcp server over the node on port 67 with oob handler

@@ -27,23 +27,13 @@ void uavcan_setup() {
   uav_node = new UAVNode();
   // attach the system microsecond timer
   uav_node->get_time_us = system_time_us;
+  // set the node ID from the WiFi connection
+  uav_node->set_id(WiFi);
 
-  // convert address and mask into a LSB-first uint32, which for some reason is the opposite of the WiFi object's properties
-  IPAddress ip = WiFi.localIP();
-  IPAddress snet = WiFi.subnetMask();
-  uint32_t addr = 0;
-  for(int i=0; i<4; i++) addr = (addr<<8) | ( ip[i] & ~snet[i] );
-  // set the node id to the last part of the subnet ip address
-  uav_node->local_node_id = addr & UV_SERIAL_NODEID_MASK;
-
-  // start the UDP transport for the node, since we have network
-  uav_node->add( new PortUDPTransport() );
-  
   // add a loopback serial transport for testing
   uav_node->add( new SerialTransport( new LoopbackSerialPort() ) );
-
-  // TCP servers are complicated because each connection could route to a unique node.
-  // but for now all TCP nodes connect to the single central uav_node.  
+  // start the UDP transport for the node, since we have network
+  uav_node->add( new PortUDPTransport(66) );  
   // start a tcp server over the node on port 66
   tcp_node = new TCPNode(66,uav_node);
   // start a debug tcp server over the node on port 67
@@ -52,7 +42,6 @@ void uavcan_setup() {
   // start UAVCAN apps on the node, some of which will begin emitting messages
   HeartbeatApp::app_v1(uav_node);
   NodeinfoApp::app_v1(uav_node);
-  // RegisterApp::app_v1(uav_node, system_registers);
 }
 
 void setup(){
