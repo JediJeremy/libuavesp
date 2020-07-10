@@ -35,6 +35,7 @@ script:
   #- arduino --verify --board esp32:esp32:lolin32 $PWD/examples/Order66/Order66.ino
   #- arduino --verify --board esp32:esp32:esp32wrover $PWD/examples/Order66/Order66.ino
   - arduino --verify --board esp32:esp32:esp32doit-devkit-v1:FlashFreq=80,DebugLevel=info $PWD/examples/HeartbeatListener/HeartbeatListener.ino
-  - arduino --verify --board esp32:esp32:esp32dev:FlashFreq=80,DebugLevel=info $PWD/examples/Order66/Order66.ino
+  - arduino --verify --board esp32:esp32:esp32doit-devkit-v1:FlashFreq=80,DebugLevel=info $PWD/examples/SerialOOB/SerialOOB.ino
+  - arduino --verify --board esp32:esp32:esp32doit-devkit-v1:FlashFreq=80,DebugLevel=info $PWD/examples/Order66/Order66.ino
 notifications:
   email: false
