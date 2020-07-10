@@ -22,7 +22,12 @@ int TCPSerialPort::readCount() {
 }
 
 int TCPSerialPort::writeCount() {
+#ifdef ESP8266
     return _client->availableForWrite();
+#endif
+#ifdef ESP_PLATFORM
+    return 256; // *sigh* fake it for now.
+#endif
 }
 
 // serial transport over TCP

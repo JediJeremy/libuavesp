@@ -11,7 +11,6 @@
 #include "lwip/inet.h"
 #include "lwip/igmp.h"
 #include "lwip/mem.h"
-#include <ESP8266WiFi.h>
 
 /*
   UDPTransport abstract interface

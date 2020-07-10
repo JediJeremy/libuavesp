@@ -2,6 +2,13 @@
 #define LIBUAVESP_H_INCLUDED
 
 #include <Arduino.h>
+#ifdef ESP8266 // ARDUINO_ARCH_ESP8266
+  #include <ESP8266WiFi.h>
+#endif
+#ifdef ESP_PLATFORM // ARDUINO_ARCH_ESP32
+  #include <WiFi.h>
+#endif
+
 #include "node.h"
 #include "transport.h"
 #include "transports/serial.h"

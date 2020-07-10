@@ -4,6 +4,7 @@
 #include "common.h"
 #include <vector>
 #include <map>
+#include <functional>
 
 // common transport property types
 using UAVMicrosecond    = uint64_t;
@@ -59,12 +60,12 @@ class UAVTransfer {
         // encoded serial frame
         int                 frame_size = 0;
         uint8_t*            frame_data = nullptr;
-        // all transfers complete callback
-        std::function<void()> on_complete;
         // reference counter
         int ref_count = 1;
         void ref(); 
         void unref(); 
+        // all transfers complete callback
+        std::function<void()> on_complete;
         // virtual destructor
         virtual ~UAVTransfer();
 

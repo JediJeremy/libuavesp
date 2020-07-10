@@ -37,12 +37,27 @@ UDPTransport::~UDPTransport() {
     _pcb = nullptr;
 }
 
+#ifdef ESP8266
+inline uint32_t ipaddress_v4(IPAddress ip) {
+    return ip.v4();
+}
+#endif
+#ifdef ESP_PLATFORM
+inline uint32_t ipaddress_v4(IPAddress ip) {
+    return ((uint32_t)ip[0]<<0) | ((uint32_t)ip[1]<<8) | ((uint32_t)ip[2]<<16) | ((uint32_t)ip[3]<<24);
+    // return ((uint32_t)ip[0]<<24) | ((uint32_t)ip[1]<<16) | ((uint32_t)ip[2]<<8) | ((uint32_t)ip[3]<<0);
+}
+#endif
 void UDPTransport::reset_ip() {
     // calc the subnet and broadcast address. start from the local ip.
-    local_ip = WiFi.localIP().v4();
-    subnet_mask = WiFi.subnetMask().v4();
+    local_ip = ipaddress_v4(WiFi.localIP());
+    subnet_mask = ipaddress_v4(WiFi.subnetMask());
     subnet_ip = local_ip & subnet_mask;
     broadcast_ip = local_ip | ~subnet_mask;
+    Serial.print("    local_ip: "); Serial.println(local_ip,16);
+    Serial.print(" subnet_mask: "); Serial.println(subnet_mask,16);
+    Serial.print("   subnet_ip: "); Serial.println(subnet_ip,16);
+    Serial.print("broadcast_ip: "); Serial.println(broadcast_ip,16);
 }
 
 bool UDPTransport::start(UAVNode& node) {
@@ -53,17 +68,38 @@ bool UDPTransport::stop(UAVNode& node) {
     return true;
 }
 
+#ifdef ESP8266
 ip_addr_t UDPTransport::node_addr(UAVNodeID node_id) {
-    ip_addr_t  udp_addr;
+    uint32_t dst_ip;
     if(node_id==0xFFFF) {
         // use the broadcast address
-        udp_addr.addr = broadcast_ip;
+        dst_ip = broadcast_ip;
     } else {
         // start from the subnet address and mix in the node id.
-        udp_addr.addr = subnet_ip | ( (node_id & 0xFF) << 24) | ( (node_id & 0xFF00) << 8);
+        dst_ip = subnet_ip | ( (node_id & 0xFF) << 24) | ( (node_id & 0xFF00) << 8);
     }
+    ip_addr_t  udp_addr;
+    udp_addr.addr = dst_ip;
     return udp_addr;
 }
+#endif
+#ifdef ESP_PLATFORM
+ip_addr_t UDPTransport::node_addr(UAVNodeID node_id) {
+    uint32_t dst_ip;
+    if(node_id==0xFFFF) {
+        // use the broadcast address
+        dst_ip = broadcast_ip;
+    } else {
+        // start from the subnet address and mix in the node id.
+        // dst_ip = subnet_ip | node_id;
+        dst_ip = subnet_ip | ( (node_id & 0xFF) << 24) | ( (node_id & 0xFF00) << 8);
+    }
+    ip_addr_t  udp_addr;
+    udp_addr.type = IPADDR_TYPE_V4;
+    udp_addr.u_addr.ip4.addr = dst_ip;
+    return udp_addr;
+}
+#endif
 
 void UDPTransport::send(UAVTransfer* transfer) {
     // turn the destination node id into a udp/ip address
@@ -167,11 +203,21 @@ udp_pcb* PortUDPTransport::port_bind(UAVNode& node, uint16_t udp_port, bool bind
             // create one
             cb = udp_new();
             udp_recv(cb, &udp_recv_fn, (void *)&node);
+#ifdef ESP8266
             const ip_addr_t udp_addr = {
                 .addr = local_ip
             };
+#endif
+#ifdef ESP_PLATFORM
+            ip_addr_t udp_addr;
+            udp_addr.type = IPADDR_TYPE_V4;
+            udp_addr.u_addr.ip4.addr = local_ip;
+#endif                
             err_t err = udp_bind(cb, &udp_addr, udp_port);
             listeners[udp_port] = cb;
+            if(err!=0) {
+                Serial.print("udp_bind err:"); Serial.println(err);
+            }
         }
         // we now definitely have one
         return cb;
@@ -251,11 +297,20 @@ void PortUDPTransport::udp_recv_fn(void *arg, struct udp_pcb *pcb, struct pbuf *
     if(arg==nullptr) return;
     UAVNode* node = (UAVNode *)arg;
     // turn ip addresses into node ids
-    uint32_t sub_mask = WiFi.subnetMask().v4();
+    uint32_t sub_mask = ipaddress_v4(WiFi.subnetMask());
+#ifdef ESP8266
     uint32_t src_ip = ~(sub_mask) & addr->addr;
-    UAVNodeID src_id = (src_ip>>8)&0xff00 | (src_ip>>24)&0x00ff;
     uint32_t dst_ip = ~(sub_mask) & pcb->local_ip.addr;
-    UAVNodeID dst_id = (dst_ip>>8)&0xff00 | (dst_ip>>24)&0x00ff;
+#endif
+#ifdef ESP_PLATFORM
+    uint32_t src_ip = ~(sub_mask) & addr->u_addr.ip4.addr;
+    uint32_t dst_ip = ~(sub_mask) & pcb->local_ip.u_addr.ip4.addr;
+#endif
+    UAVNodeID src_id = ((src_ip>>8)&0xff00) | ((src_ip>>24)&0x00ff);
+    UAVNodeID dst_id = ((dst_ip>>8)&0xff00) | ((dst_ip>>24)&0x00ff);
+    /* Serial.print("[>>"); 
+    Serial.print(src_id); Serial.print("->");  Serial.print(dst_id); 
+    Serial.print("<<]"); */
     // wrap the pbuf data in an input stream
     UAVInStream in( (uint8_t*)p->payload, p->len );
     // decode the frame stream to the node

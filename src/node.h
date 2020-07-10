@@ -7,7 +7,12 @@
 #include <vector>
 #include <map>
 #include <forward_list>
-#include <ESP8266WiFi.h>
+#ifdef ESP8266
+  #include <ESP8266WiFi.h>
+#endif
+#ifdef ESP_PLATFORM
+  #include <WiFi.h>
+#endif
 
 class UAVTask {
     public:
@@ -90,7 +95,12 @@ class UAVNode {
         UAVNode();
         virtual ~UAVNode();
         // setup IP address properties from a wifi connection
+#ifdef ESP8266
         void set_id(ESP8266WiFiClass& wifi);
+#endif
+#ifdef ESP_PLATFORM
+        void set_id(WiFiClass& wifi);
+#endif
         // event loop
         void loop(const unsigned long t, const int dt);
         // transport management

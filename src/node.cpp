@@ -54,6 +54,7 @@ UAVNode::~UAVNode() {
     for(auto t : _transports) t->stop(*this);
 }
 
+#ifdef ESP8266
 void UAVNode::set_id(ESP8266WiFiClass& wifi) {
     // ip v4 extraction
     uint32_t ip = wifi.localIP().v4();
@@ -62,6 +63,18 @@ void UAVNode::set_id(ESP8266WiFiClass& wifi) {
     // set the node id to the last part of the non-subnet ip address
     local_node_id = ((addr>>8) & 0xFF00) | ((addr>>24) & 0xFF);
 }
+#endif
+#ifdef ESP_PLATFORM
+void UAVNode::set_id(WiFiClass& wifi) {
+    // ip v4 extraction
+    IPAddress ip = wifi.localIP();
+    IPAddress snet = wifi.subnetMask();
+    IPAddress addr; // = ip & ~snet;
+    for(int i=0; i<4; i++) addr[i]= ip[i] & ~snet[i];
+    // set the node id to the last part of the non-subnet ip address
+    local_node_id = (((uint16_t)addr[2])<<8) | ((uint16_t)addr[3]);
+}
+#endif
 
 // declare that we will be listening for subjects of this datatype
 void UAVNode::subscribe(UAVPortID subject_id, PGM_P dtf_name, UAVPortListener fn) { 

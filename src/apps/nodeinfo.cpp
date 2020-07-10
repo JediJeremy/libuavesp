@@ -11,9 +11,16 @@ void NodeinfoApp::service_GetInfo_v1(UAVNode& node, UAVInStream& in, UAVPortRepl
     r.software_version.minor = 0;
     // use a temp stream to pack unique hardware id bytes
     UAVOutStream uid(r.unique_id,16);
+#ifdef ESP8266
     uid.P(PSTR("ESP-8266")) << ESP.getChipId() << ESP.getFlashChipId();
     // friendly name
     r.name.assign("ESP 8266");
+#endif
+#ifdef ESP_PLATFORM
+    uid.P(PSTR("ESP-32  ")) << ESP.getEfuseMac();
+    // friendly name
+    r.name.assign("ESP32");
+#endif
     // fill the vcs revision id
     String md5 = ESP.getSketchMD5();
     uint64_t hash = 0;

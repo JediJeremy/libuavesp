@@ -184,7 +184,7 @@ class RegisterDefinition {
 
 class RegisterList : public std::map<uint16_t, RegisterDefinition*> {
     public:
-        RegisterDefinition* claim(PGM_P name) {}
+        RegisterDefinition* claim(PGM_P name) { return nullptr; }
 };
 
 

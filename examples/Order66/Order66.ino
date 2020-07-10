@@ -1,5 +1,4 @@
 #include <Arduino.h>
-#include <ESP8266WiFi.h>
 #include <math.h>
 #include <libuavesp.h>
 
@@ -134,7 +133,7 @@ void loop() {
       debug_heap = 30000;
       // debug heap stats
       Serial.print("--- heap:"); Serial.print(ESP.getFreeHeap()); 
-      Serial.print(" maxfb:"); Serial.print(ESP.getMaxFreeBlockSize()); 
+      // Serial.print(" maxfb:"); Serial.print(ESP.getMaxFreeBlockSize()); 
       Serial.println();
     }
   }

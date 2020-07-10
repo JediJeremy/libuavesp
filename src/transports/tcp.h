@@ -6,7 +6,6 @@
 #include "../transport.h"
 #include "../numbermap.h"
 #include "serial.h"
-#include <ESP8266WiFi.h>
 #include <vector>
 
 #define MAX_TCP_CLIENTS 10

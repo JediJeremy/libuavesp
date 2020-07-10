@@ -45,9 +45,9 @@ class HeartbeatMessage {
         // serializer
         friend UAVOutStream& operator<<(UAVOutStream& s, const HeartbeatMessage& v) { 
             uint8_t status[3] = {
-                ((v.health & 0x03)<<6) | ((v.mode & 0x07)<<3) | ((v.vendor & 0x070000)>>16),
-                (v.vendor & 0x00ff00)>>8,
-                (v.vendor & 0x0000ff)
+                (uint8_t)( ((v.health & 0x03)<<6) | ((v.mode & 0x07)<<3) | ((v.vendor & 0x070000)>>16) ),
+                (uint8_t)( (v.vendor & 0x00ff00)>>8 ),
+                (uint8_t)( v.vendor & 0x0000ff )
             };
             return s << v.uptime << status[0] << status[1] << status[2]; 
         }
